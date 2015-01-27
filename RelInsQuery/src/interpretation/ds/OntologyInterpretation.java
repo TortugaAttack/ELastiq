@@ -24,10 +24,10 @@ public class OntologyInterpretation {
 
 	private IDomain m_domain;
 	
-	private OWLOntology m_targetOntology;
+	// private FunctionMapping m_mapping; // there was no need to have a generic implementation of the function mapping so far
 	
-	public OntologyInterpretation(OWLOntology o) {
-		this.m_targetOntology = o;
+	public OntologyInterpretation() {
+
 	}
 	
 	/**
@@ -40,5 +40,10 @@ public class OntologyInterpretation {
 	
 	public IDomain getDomain(){
 		return m_domain;
+	}
+	
+	@Override
+	public String toString() {
+		return m_domain.toString();
 	}
 }
