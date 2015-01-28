@@ -20,13 +20,13 @@ import org.semanticweb.owlapi.model.OWLOntology;
  * maximilian.pensel@mailbox.tu-dresden.de
  *
  */
-public class OntologyInterpretation {
+public class CanonicalInterpretation {
 
-	private IDomain m_domain;
+	private CanonicalDomain m_domain;
 	
 	// private FunctionMapping m_mapping; // there was no need to have a generic implementation of the function mapping so far
 	
-	public OntologyInterpretation() {
+	public CanonicalInterpretation() {
 
 	}
 	
@@ -34,11 +34,11 @@ public class OntologyInterpretation {
 	 * This is used to specify the type of domain that some InterpretationGenerator requires.
 	 * @param d
 	 */
-	public void initDomain(IDomain d){
+	public void initDomain(CanonicalDomain d){
 		m_domain = d;
 	}
 	
-	public IDomain getDomain(){
+	public CanonicalDomain getDomain(){
 		return m_domain;
 	}
 	

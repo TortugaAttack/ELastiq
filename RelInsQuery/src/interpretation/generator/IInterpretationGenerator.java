@@ -5,10 +5,10 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import owl.OntologyOperator;
 
 import interpretation.ds.IDomain;
-import interpretation.ds.OntologyInterpretation;
+import interpretation.ds.CanonicalInterpretation;
 
 public interface IInterpretationGenerator {
 
-	public OntologyInterpretation generate(OWLOntology ontology);
+	public CanonicalInterpretation generate(OWLOntology ontology);
 	
 }
