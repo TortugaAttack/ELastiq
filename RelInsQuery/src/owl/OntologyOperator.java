@@ -27,11 +27,14 @@ public class OntologyOperator implements IOWLOntologyExtension {
 	
 	private OWLReasoner m_reasoner;
 	
+	private boolean m_ontologyChanged;
+	
 	private boolean m_isFlat;
 	
 	private OntologyOperator(OWLOntology o) {
 		this.m_ontology = o;
 		this.m_isFlat = false;
+		this.m_ontologyChanged = true;
 	}
 	
 	public static OntologyOperator getOntologyOperator(OWLOntology o){
@@ -41,7 +44,8 @@ public class OntologyOperator implements IOWLOntologyExtension {
 	}
 	
 	public void flatten(){
-		m_flattener = new OWLAxiomFlatteningTransformer();
+		if(m_flattener == null)
+			m_flattener = new OWLAxiomFlatteningTransformer();
 		m_flattener.transform(m_ontology);
 		this.m_isFlat = true;
 	}
@@ -53,8 +57,16 @@ public class OntologyOperator implements IOWLOntologyExtension {
 	public void process(InferenceType type){
 		if(m_reasoner == null)
 			m_reasoner = new ElkReasonerFactory().createReasoner(m_ontology);
-		if(!m_reasoner.isPrecomputed(type))
+		
+		if(m_ontologyChanged){
+			m_reasoner.flush();
 			m_reasoner.precomputeInferences(type);
+			m_ontologyChanged = false;
+		}
+			
+		if(!m_reasoner.isPrecomputed(type)) // in case the ontology did not change but still additional inferences are required
+			m_reasoner.precomputeInferences(type);
+		
 	}
 	
 	public OWLReasoner getReasoner() {
@@ -71,12 +83,17 @@ public class OntologyOperator implements IOWLOntologyExtension {
 	}
 	
 	public OWLAxiomFlatteningTransformer getExistentialRestrictionStore(){
-		if(!isFlat())
+		if(!isFlat() || m_ontologyChanged)
 			flatten();
+		
 		return m_flattener;
 	}
 	
 	public OWLOntology getOntology() {
 		return m_ontology;
+	}
+	
+	public void ontologyChanged(){
+		this.m_ontologyChanged = true;
 	}
 }

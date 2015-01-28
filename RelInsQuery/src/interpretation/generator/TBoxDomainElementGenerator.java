@@ -61,13 +61,17 @@ public class TBoxDomainElementGenerator implements
 			while(nodeIt.hasNext()){
 				Iterator<OWLClass> it = nodeIt.next().iterator();
 				while(it.hasNext()){
-					node.addInstantiator(it.next());
+					OWLClass inst = it.next();
+					if(!m_generator.isRestrictedInstantiator(inst))
+						node.addInstantiator(inst);
 				}
 			}
 			// add all equivalent class instantiators
 			Iterator<OWLClass> cIt = reasoner.getEquivalentClasses(node.getId()).iterator();
 			while(cIt.hasNext()){
-				node.addInstantiator(cIt.next());
+				OWLClass inst = cIt.next();
+				if(!m_generator.isRestrictedInstantiator(inst))
+					node.addInstantiator(inst);
 			}
 		}
 	}

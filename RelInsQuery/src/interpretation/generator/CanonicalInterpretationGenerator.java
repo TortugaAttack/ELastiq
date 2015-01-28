@@ -31,6 +31,8 @@ import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
+import Main.Main;
+
 import owl.IOWLOntologyExtension;
 import owl.OntologyOperator;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
@@ -164,7 +166,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	
 	private void addEntailedKBSuccessors(OWLObjectSomeValuesFrom some){
 		// add all role-successors entailed by the TBox
-		addEntailedTBoxSuccessors(some, false); // for KB mode always do normalizing in the end
+		addEntailedTBoxSuccessors(some, true); // for KB mode only normalize TBox contained roles
 		
 		NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner().getInstances(getClassRepresentation(some), false);
 		Iterator<Node<OWLNamedIndividual>> it1 = instances.iterator();
@@ -185,8 +187,11 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		if(from.getId() instanceof OWLClassExpression && to.getId() instanceof OWLClassExpression){
 			Set<DomainNode<?>> successors = from.getSuccessors(property);
 			for(DomainNode<?> succ : successors){
-				if(succ.getInstantiators().containsAll(to.getInstantiators())){
-					return true;
+				// only compare successors to other class domain elements
+				if(succ.getId() instanceof OWLClassExpression){
+					if(succ.getInstantiators().containsAll(to.getInstantiators())){ // could be done with reasoner
+						return true;
+					}
 				}
 			}
 		}
@@ -216,7 +221,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		if(successors != null){
 			Set<DomainNode<?>> mark_removed = new HashSet<DomainNode<?>>();
 			for(DomainNode<?> succ : successors){
-				if(succ.getId() instanceof OWLClassExpression){
+				if(succ.getId() instanceof OWLClassExpression){ // only inspect class to class relations
 					// if newSucc is more specific than succ, remove succ
 					if(m_ontologyOperator.getReasoner().getSuperClasses(newSucc, false)
 							.containsEntity(getClassRepresentation((OWLClassExpression)succ.getId()))
@@ -241,8 +246,9 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	}
 	
 	private void insertQueryAxiom(OWLClass queryClass){
-		OWLManager.createOWLOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
+		Main.getOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
 				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(queryClass, m_referenceExpression));
+		m_ontologyOperator.ontologyChanged();
 	}
 	
 	public OWLClass getClassRepresentation(OWLClassExpression ex){
@@ -265,6 +271,10 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	
 	public boolean isKBMode(){
 		return m_referenceExpression == null;
+	}
+	
+	public boolean isRestrictedInstantiator(OWLClass c){
+		return c.isTopEntity() || m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(c);
 	}
 	
 	public CanonicalDomain getDomain() {

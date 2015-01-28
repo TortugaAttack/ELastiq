@@ -30,10 +30,12 @@ import owl.io.OntologyFileSimplifier;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 
 public class Main {
+	
+	private static OWLOntologyManager MANAGER;
 
 	public static void main(String[] args) {
-		
-		OWLOntologyLoader loader = new OWLOntologyLoader();
+		MANAGER = OWLManager.createOWLOntologyManager();
+		OWLOntologyLoader loader = new OWLOntologyLoader(MANAGER);
 		OWLOntology o = loader.load("exPaper01.ofn");
 //		OWLOntology o = loader.load("ex02NotNormalized.ofn");
 		
@@ -46,7 +48,7 @@ public class Main {
 //			printOntology(o, false);
 			
 			// create a specific query concept
-			OWLDataFactory df = OWLManager.getOWLDataFactory();
+			OWLDataFactory df = MANAGER.getOWLDataFactory();
 			OWLClassExpression query = df.getOWLObjectIntersectionOf(
 					df.getOWLClass(IRI.create("A")),
 					df.getOWLObjectSomeValuesFrom(
@@ -60,10 +62,8 @@ public class Main {
 			CanonicalInterpretationGenerator generator = new CanonicalInterpretationGenerator(); // KB mode first
 			OntologyInterpretation iKB = generator.generate(o);
 			
-			OWLOntology o2 = cloneOntology(o); // very very bad, we do not want to compute all inferences twice
-			
 			generator = new CanonicalInterpretationGenerator(query); // TBox mode last, it alters the TBox
-			OntologyInterpretation iQT = generator.generate(o2);
+			OntologyInterpretation iQT = generator.generate(o);
 			
 			// show flat ontology first
 			System.out.println(StaticValues.SEPERATOR);
@@ -81,17 +81,6 @@ public class Main {
 			e.printStackTrace();
 		}
 		
-	}
-	
-	public static OWLOntology cloneOntology(OWLOntology o){
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-		try {
-			OWLOntology oClone = man.createOntology(o.getAxioms());
-			return oClone;
-		} catch (OWLOntologyCreationException e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 	
 	public static void printOntology(OWLOntology o){
@@ -135,5 +124,9 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static OWLOntologyManager getOntologyManager(){
+		return MANAGER;
 	}
 }

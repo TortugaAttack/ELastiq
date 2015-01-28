@@ -66,6 +66,25 @@ public class DomainNode<T> {
 		return Collections.emptySet();
 	}
 	
+	public Set<RoleAssertion> getSuccessorObjects(OWLObjectProperty r){
+		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
+		for(DomainNode<?> to : m_successors.get(r)){
+			successors.add(new RoleAssertion(this, to, r));
+		}
+		return successors;
+	}
+	
+	public Set<RoleAssertion> getSuccessorObjects(){
+		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
+		for(OWLObjectProperty r : m_successors.keySet()){
+			for(DomainNode<?> to : m_successors.get(r)){
+				successors.add(new RoleAssertion(this, to, r));
+			}
+		}
+		
+		return successors;
+	}
+	
 	public T getId(){
 		return m_id;
 	}

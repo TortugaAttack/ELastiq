@@ -18,14 +18,19 @@ public class OWLOntologyLoader {
 
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 	
+	private OWLOntologyManager m_manager;
+	
+	public OWLOntologyLoader(OWLOntologyManager manager) {
+		m_manager = manager;
+	}
+
 	public OWLOntology load(String file){
 		return load(new File(file));
 	}
 	
 	public OWLOntology load(File file){
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		try {
-			OWLOntology o = man.loadOntology(IRI.create(file));
+			OWLOntology o = m_manager.loadOntology(IRI.create(file));
 			LOG.info("Done loading " + o);
 			return o;
 		} catch (OWLOntologyCreationException e) {
@@ -36,9 +41,8 @@ public class OWLOntologyLoader {
 	}
 	
 	public void save(File f, OWLOntology o, OWLOntologyFormat format){
-		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		try {
-			man.saveOntology(o, format, IRI.create(f));
+			m_manager.saveOntology(o, format, IRI.create(f));
 		} catch (OWLOntologyStorageException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

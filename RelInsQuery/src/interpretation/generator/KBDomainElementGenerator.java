@@ -67,19 +67,21 @@ public class KBDomainElementGenerator implements IDomainElementGenerator{
 		// do not accept other id-types
 	}
 	
-	private void addInstantiators(DomainNode<OWLNamedIndividual> node, OWLNamedIndividual id){
+	private void addInstantiators(DomainNode<OWLNamedIndividual> node, OWLNamedIndividual individual){
 		OWLReasoner reasoner = m_generator.getOntologyOperator().getReasoner();
-		NodeSet<OWLClass> types = reasoner.getTypes(id, false);
+		NodeSet<OWLClass> types = reasoner.getTypes(individual, false);
 		Iterator<Node<OWLClass>> it1 = types.iterator();
 		while(it1.hasNext()){
 			Iterator<OWLClass> it2 = it1.next().iterator();
 			while(it2.hasNext()){
-				node.addInstantiator(it2.next());
+				OWLClass inst = it2.next();
+				if(!m_generator.isRestrictedInstantiator(inst))
+					node.addInstantiator(inst);
 			}
 		}
 	}
 	
-	private void addInstantiators(DomainNode<OWLClassExpression> node, OWLClassExpression id){
+	private void addInstantiators(DomainNode<OWLClassExpression> node, OWLClassExpression individual){
 		OWLClass classRep = m_generator.getClassRepresentation(node.getId());
 		if(classRep != null){
 			OWLReasoner reasoner = m_generator.getOntologyOperator().getReasoner();
@@ -89,13 +91,17 @@ public class KBDomainElementGenerator implements IDomainElementGenerator{
 			while(nodeIt.hasNext()){
 				Iterator<OWLClass> it = nodeIt.next().iterator();
 				while(it.hasNext()){
-					node.addInstantiator(it.next());
+					OWLClass inst = it.next();
+					if(!m_generator.isRestrictedInstantiator(inst))
+						node.addInstantiator(inst);
 				}
 			}
 			// add all equivalent class instantiators
 			Iterator<OWLClass> cIt = reasoner.getEquivalentClasses(node.getId()).iterator();
 			while(cIt.hasNext()){
-				node.addInstantiator(cIt.next());
+				OWLClass inst = cIt.next();
+				if(!m_generator.isRestrictedInstantiator(inst))
+					node.addInstantiator(inst);
 			}
 		}
 	}
