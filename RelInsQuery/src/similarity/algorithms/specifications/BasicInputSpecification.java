@@ -2,12 +2,16 @@ package similarity.algorithms.specifications;
 
 import java.io.File;
 import java.util.Map;
+import java.util.logging.Logger;
 
+import main.Main;
+import main.StaticValues;
+
+import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import Main.Main;
 
 import owl.io.OWLOntologyLoader;
 import owl.io.OWLQueryParser;
@@ -17,6 +21,8 @@ import similarity.measures.entities.IEntitySimilarityMeasure;
 
 public class BasicInputSpecification implements IInputSpecification {
 
+	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
+	
 	private OWLClassExpression m_query;
 	
 	private OWLOntology m_ontology;
@@ -27,12 +33,16 @@ public class BasicInputSpecification implements IInputSpecification {
 
 	protected IEntitySimilarityMeasure m_primitiveMeasure;
 	
+	private GeneralParameters m_parameters;
+	
 	public BasicInputSpecification() {
 		m_primitiveMeasure = new DefaultEntitySimilarityMeasure();
 		
 		m_defaultWeight = 1.0;
 		
 		m_threshold = 1.0;
+		
+		m_parameters = new GeneralParameters();
 	}
 	
 	@Override
@@ -67,7 +77,11 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	/* ************* setters *********** */
 	public void setQuery(String classExpression){
-		OWLQueryParser parser = new OWLQueryParser();
+		if(m_ontology == null){
+			LOG.severe("Unable to parse query without specified ontology. Regard the order of your input specifications.");
+			return;
+		}
+		OWLQueryParser parser = new OWLQueryParser(m_ontology);
 		// just use default
 		setQuery(parser.parse(classExpression));
 	}
@@ -110,6 +124,10 @@ public class BasicInputSpecification implements IInputSpecification {
 		return m_threshold;
 	}
 	
+	public GeneralParameters getParameters(){
+		return m_parameters;
+	}
+	
 	// default getters
 	public Double getWeight(OWLEntity e){
 		return m_defaultWeight;
@@ -117,6 +135,14 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	public Double getDiscountingFactor(){
 		return 1.0;
+	}
+	
+	public TerminationMethod getTerminationMethod(){
+		return TerminationMethod.RELATIVE;
+	}
+	
+	public double getTerminationValue(){
+		return 0.05;
 	}
 	
 }

@@ -5,12 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import main.Main;
+
 import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLOntology;
 
 import similarity.algorithms.specifications.BasicInputSpecification;
 
-import Main.Main;
 
 
 
@@ -24,8 +26,16 @@ public class OWLQueryParser {
 
 	private List<OWLQueryParser> m_parsers;
 	
+	private OWLOntology m_target;
+	
 	public OWLQueryParser() {
+//		System.err.println("The cake is a lie.");
+//		System.exit(1);
+	}
+	
+	public OWLQueryParser(OWLOntology o) {
 		m_parsers = new ArrayList<OWLQueryParser>();
+		m_target = o;
 	}
 	
 	public OWLClassExpression parse(String classExpression) throws OWLParserException{
@@ -53,8 +63,7 @@ public class OWLQueryParser {
 	
 	private void registerDefault(){
 		if(Main.getInputs() instanceof BasicInputSpecification){
-			m_parsers.add(new SimpleManchesterOWLQueryParser(
-				((BasicInputSpecification)Main.getInputs()).getOntology()));
+			m_parsers.add(new SimpleManchesterOWLQueryParser(m_target));
 		}
 	}
 }

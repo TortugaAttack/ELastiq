@@ -67,18 +67,31 @@ public class DomainNode<T> {
 	}
 	
 	public Set<RoleAssertion> getSuccessorObjects(OWLObjectProperty r){
+		return getSuccessorObjects(r, null);
+	}
+	
+	public Set<RoleAssertion> getSuccessorObjects(OWLObjectProperty r, CanonicalInterpretation c){
 		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
 		for(DomainNode<?> to : m_successors.get(r)){
-			successors.add(new RoleAssertion(this, to, r));
+			successors.add(new RoleAssertion(this, to, r, c));
 		}
 		return successors;
 	}
 	
 	public Set<RoleAssertion> getSuccessorObjects(){
+		return getSuccessorObjects((CanonicalInterpretation)null); // interesting.. typecasting null ^^
+	}
+	
+	/**
+	 * If no canonical interpretation is given, the returned roles will still contain the destination node.
+	 * @param c
+	 * @return
+	 */
+	public Set<RoleAssertion> getSuccessorObjects(CanonicalInterpretation c){
 		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
 		for(OWLObjectProperty r : m_successors.keySet()){
 			for(DomainNode<?> to : m_successors.get(r)){
-				successors.add(new RoleAssertion(this, to, r));
+				successors.add(new RoleAssertion(this, to, r, c));
 			}
 		}
 		
@@ -89,10 +102,14 @@ public class DomainNode<T> {
 		return m_id;
 	}
 	
+	public String toShortString(){
+		return "d(" + m_id.toString() + ")";
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("d(" + m_id.toString() + ")  ");
+		sb.append(this.toShortString() + "  ");
 		
 		// instantiators
 		sb.append("[");

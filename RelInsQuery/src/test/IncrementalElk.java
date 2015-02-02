@@ -2,6 +2,8 @@ package test;
 
 import java.io.File;
 
+import main.StaticValues;
+
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.AddAxiom;
@@ -15,7 +17,6 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-import Main.StaticValues;
 
 import owl.io.OWLOntologyLoader;
 

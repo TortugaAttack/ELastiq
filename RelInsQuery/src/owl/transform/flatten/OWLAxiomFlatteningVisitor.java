@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import main.StaticValues;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.AddAxiom;
 import org.semanticweb.owlapi.model.ClassExpressionType;
@@ -27,7 +29,6 @@ import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.RemoveAxiom;
 import org.semanticweb.owlapi.util.OWLObjectVisitorExAdapter;
 
-import Main.StaticValues;
 
 public class OWLAxiomFlatteningVisitor extends OWLObjectVisitorExAdapter<OWLClassExpression> {
 

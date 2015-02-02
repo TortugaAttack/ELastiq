@@ -11,6 +11,8 @@ import interpretation.ds.DomainNode;
 import interpretation.ds.IDomain;
 import interpretation.ds.CanonicalInterpretation;
 
+import main.Main;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnonymousIndividual;
@@ -31,7 +33,6 @@ import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-import Main.Main;
 
 import owl.IOWLOntologyExtension;
 import owl.OntologyOperator;
@@ -40,7 +41,7 @@ import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 public class CanonicalInterpretationGenerator implements IInterpretationGenerator {
 
 	private OWLClassExpression m_referenceExpression;
-	private OWLClass m_queryClass;
+	private OWLClass m_referenceClass;
 	
 	private OntologyOperator m_ontologyOperator;
 	
@@ -81,9 +82,9 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		
 		if(!isKBMode()){ // TBox + Query mode
 			// define class Q as equivalence to the reference expression (query)
-			m_queryClass = getFreshQueryClass("Q");
-			insertQueryAxiom(m_queryClass);
-			((TBoxDomainElementGenerator)elemGen).registerConcept(m_queryClass);
+			m_referenceClass = getFreshQueryClass("Q");
+			insertQueryAxiom(m_referenceClass);
+			((TBoxDomainElementGenerator)elemGen).registerConcept(m_referenceClass);
 		}
 		
 		OWLAxiomFlatteningTransformer exRestStore = m_ontologyOperator.getExistentialRestrictionStore(); // flattens here
@@ -256,6 +257,8 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		if(ex instanceof OWLClass){
 			return (OWLClass)ex;
 		}
+		if(ex != null && ex.equals(m_referenceExpression))
+			return m_referenceClass;
 
 		return m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(ex);
 	}
@@ -278,7 +281,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		return c == null
 				|| c.isTopEntity()
 				|| m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(c)
-				|| c.equals(m_queryClass);
+				|| c.equals(m_referenceClass);
 	}
 	
 	public CanonicalDomain getDomain() {

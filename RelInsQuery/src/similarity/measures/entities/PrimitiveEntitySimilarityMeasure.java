@@ -32,6 +32,9 @@ public class PrimitiveEntitySimilarityMeasure extends DefaultEntitySimilarityMea
 			if(m_propertySimilarities.containsKey((OWLObjectProperty)obj1)
 					&& m_propertySimilarities.get((OWLObjectProperty)obj1).containsKey((OWLObjectProperty)obj2)){
 				return m_propertySimilarities.get((OWLObjectProperty)obj1).get((OWLObjectProperty)obj2);
+			}else if(m_propertySimilarities.containsKey((OWLObjectProperty)obj2)
+					&& m_propertySimilarities.get((OWLObjectProperty)obj2).containsKey((OWLObjectProperty)obj1)){
+				return m_propertySimilarities.get((OWLObjectProperty)obj2).get((OWLObjectProperty)obj1);
 			}else{
 				return super.similarity(obj1, obj2);
 			}
@@ -39,6 +42,10 @@ public class PrimitiveEntitySimilarityMeasure extends DefaultEntitySimilarityMea
 			if(m_classSimilarities.containsKey((OWLClass)obj1)
 					&& m_classSimilarities.get((OWLClass)obj1).containsKey((OWLClass)obj2)){
 				return m_classSimilarities.get((OWLClass)obj1).get((OWLClass)obj2);
+			}else if(m_classSimilarities.containsKey((OWLClass)obj2)
+					&& m_classSimilarities.get((OWLClass)obj2).containsKey((OWLClass)obj1)){
+				return m_classSimilarities.get((OWLClass)obj2).get((OWLClass)obj1);
+			
 			}else{
 				return super.similarity(obj1, obj2);
 			}

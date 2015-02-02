@@ -22,12 +22,20 @@ import org.semanticweb.owlapi.model.OWLOntology;
  */
 public class CanonicalInterpretation {
 
+	private String m_name;
+	
 	private CanonicalDomain m_domain;
+	
+	private static int cnt = 1;
 	
 	// private FunctionMapping m_mapping; // there was no need to have a generic implementation of the function mapping so far
 	
 	public CanonicalInterpretation() {
-
+		this("I" + cnt++);
+	}
+	
+	public CanonicalInterpretation(String name){
+		m_name = name;
 	}
 	
 	/**
@@ -40,6 +48,14 @@ public class CanonicalInterpretation {
 	
 	public CanonicalDomain getDomain(){
 		return m_domain;
+	}
+	
+	public void setName(String name){
+		this.m_name = name;
+	}
+	
+	public String getName(){
+		return this.m_name;
 	}
 	
 	@Override

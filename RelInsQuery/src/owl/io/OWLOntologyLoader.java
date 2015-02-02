@@ -3,6 +3,8 @@ package owl.io;
 import java.io.File;
 import java.util.logging.Logger;
 
+import main.StaticValues;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -11,7 +13,6 @@ import org.semanticweb.owlapi.model.OWLOntologyFormat;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 
-import Main.StaticValues;
 
 
 public class OWLOntologyLoader {

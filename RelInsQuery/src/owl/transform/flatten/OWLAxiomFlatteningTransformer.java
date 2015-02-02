@@ -2,13 +2,14 @@ package owl.transform.flatten;
 
 import java.util.Set;
 
+import main.Main;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import Main.Main;
 
 import owl.transform.OWLOntologyTransformer;
 

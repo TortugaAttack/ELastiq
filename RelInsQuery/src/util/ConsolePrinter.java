@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import main.StaticValues;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owlapi.model.IRI;
@@ -15,7 +17,6 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 
-import Main.StaticValues;
 
 import owl.io.OntologyFileSimplifier;
 
@@ -29,16 +30,22 @@ public class ConsolePrinter {
 		System.out.println(interpretation); // maybe some more output required..
 	}
 	
-	public static void printOntology(OWLOntology o){
-		System.out.println(o);
-		System.out.println("TBox:");
+	public static String getOntologyString(OWLOntology o){
+		StringBuilder sb = new StringBuilder();
+		sb.append(o + "\n");
+		sb.append("TBox:" + "\n");
 		for(OWLAxiom ax : o.getTBoxAxioms(true)){
-			System.out.println(ax.toString());
+			sb.append(ax.toString() + "\n");
 		}
-		System.out.println("ABox:");
+		sb.append("ABox:" + "\n");
 		for(OWLAxiom ax : o.getABoxAxioms(true)){
-			System.out.println(ax.toString());
+			sb.append(ax.toString() + "\n");
 		}
+		return sb.toString();
+	}
+	
+	public static void printOntology(OWLOntology o){
+		System.out.println(getOntologyString(o));
 	}
 	
 	/**

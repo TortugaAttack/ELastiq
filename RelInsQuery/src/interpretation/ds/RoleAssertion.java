@@ -16,12 +16,22 @@ public class RoleAssertion {
 	private DomainNode<?> m_from;
 	private DomainNode<?> m_to;
 	
+	private PointedInterpretation m_toPointed;
+	
 	private OWLObjectProperty m_property;
 	
 	public RoleAssertion(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property) {
 		m_from = from;
 		m_to = to;
 		m_property = property;
+	}
+	
+	public RoleAssertion(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property, CanonicalInterpretation pointed) {
+		m_from = from;
+		m_to = to;
+		m_property = property;
+		if(pointed != null)
+			m_toPointed = new PointedInterpretation(pointed, to);
 	}
 	
 	public DomainNode<?> getFrom() {
