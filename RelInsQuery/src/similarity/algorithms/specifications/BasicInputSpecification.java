@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import javax.jws.soap.SOAPBinding.ParameterStyle;
+
 import main.Main;
 import main.StaticValues;
 
@@ -142,7 +144,7 @@ public class BasicInputSpecification implements IInputSpecification {
 	}
 	
 	public double getTerminationValue(){
-		return 0.05;
+		return 0.01;
 	}
 	
 }

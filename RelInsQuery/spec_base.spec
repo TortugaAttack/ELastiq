@@ -22,7 +22,7 @@ A AND s SOME (B AND C)
 # weights of entities, key-value pairs, overriding base weights of all entities (DEFAULT: 1, can be specified in [parameters])
 # this block is optional
 [weights]
-#A:4
+#A:10
 #C:12
 #r:0.1
 
@@ -37,7 +37,7 @@ DEFAULT
 
 # simply the threshold value for accepting relaxed instances
 [threshold]
-0.6
+0.2
 
 # a generic and optional list of key-value pairs altering the behaviour of the application
 [parameters]
@@ -49,13 +49,15 @@ normalizing:2
 baseWeight:1
 # either give iterations or precision, if both found, first one is respected, if none found, default behaviour
 # fixed number of iterations of main procedure (NOT DEFAULT METHOD)
-iterations:10
-# OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.05)
-precision:0.05
-# specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10)
+# iterations:50
+# OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
+precision:0.0001
+# specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
-log:INFO
+log:FINE
+# give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
+output:./out_example/
 
 # specify what outputs you require
 [output]

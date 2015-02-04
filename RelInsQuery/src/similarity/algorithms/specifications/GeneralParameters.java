@@ -1,5 +1,6 @@
 package similarity.algorithms.specifications;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,10 +16,9 @@ public class GeneralParameters {
 	
 	public static final String SMALL_MODEL = "smallModel";
 	public static final String NORMALIZING = "normalizing";
-	public static final String TERMINATION_VALUE = "terminationValue";
-	public static final String TERMINATION_METHOD = "terminationMethod";
 	public static final String DECIMAL_ACCURACY = "accuracy";
 	public static final String LOG_LEVEL = "logLevel";
+	public static final String OUT_DIR = "output";
 	
 	private Set<OutputType> m_outputs;
 	
@@ -34,10 +34,9 @@ public class GeneralParameters {
 	private void setDefaults(){
 		m_values.put(SMALL_MODEL, true);
 		m_values.put(NORMALIZING, true);
-		m_values.put(TERMINATION_METHOD, TerminationMethod.RELATIVE);
-		m_values.put(TERMINATION_VALUE, 0.05);
 		m_values.put(DECIMAL_ACCURACY, 10);
 		m_values.put(LOG_LEVEL, Level.INFO);
+		m_values.put(OUT_DIR, new File("./"));
 	}
 	
 	public void enterValue(String key, Object value){

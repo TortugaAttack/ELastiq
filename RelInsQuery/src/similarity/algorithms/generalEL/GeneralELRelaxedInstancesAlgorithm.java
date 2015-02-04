@@ -35,10 +35,12 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import similarity.algorithms.IRelaxedInstancesAlgorithm;
 import similarity.algorithms.specifications.BasicInputSpecification;
+import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import util.ConsolePrinter;
+import util.EasyMath;
 
 public class GeneralELRelaxedInstancesAlgorithm implements
 		IRelaxedInstancesAlgorithm<BasicInputSpecification> {
@@ -69,10 +71,12 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		m_simiDevelopment = new HashMap<Integer, Map<SimilarityValue,Double>>();
 		
 		CanonicalInterpretationGenerator generator = new CanonicalInterpretationGenerator(); // KB mode first
+		generator.setSmallCreationFlag((boolean)m_currentSpec.getParameters().getValue(GeneralParameters.SMALL_MODEL));
 		m_KBModel = generator.generate(specification.getOntology());
 		m_KBModel.setName("I_KB");
 		
 		generator = new CanonicalInterpretationGenerator(specification.getQuery()); // TBox mode second, it alters the TBox
+		generator.setSmallCreationFlag((boolean)m_currentSpec.getParameters().getValue(GeneralParameters.SMALL_MODEL));
 		m_TBoxModel = generator.generate(specification.getOntology());
 		OWLClass queryClass = generator.getClassRepresentation(specification.getQuery());
 		m_TBoxModel.setName("I_QT");
@@ -113,6 +117,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //		m_factory.registerInteresting(m_factory.getSimilarityValue(p1, p2, 0));
 		// EOT
 		
+		// store values before first iteration
 		storeCurrentSimiDev(m_factory, 0);
 		m_currentIteration = 0;
 		boolean storeDevelopment = m_currentSpec.getParameters().getOutputs().contains(OutputType.ASCII) ||
@@ -141,13 +146,18 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		if(storeDevelopment && (LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE)){
 			StringBuilder sb = new StringBuilder();
 			sb.append("Development of interesting similarity values:\n");
-			sb.append(getSimiDevelopment());
+			GeneralELOutputGenerator gen = new GeneralELOutputGenerator(this, m_currentSpec);
+			sb.append(gen.renderASCIITable());
 			LOG.info(sb.toString());
 		}
 		
 		String termination_reason = "";
 		if(m_currentSpec.getTerminationMethod() == TerminationMethod.ABSOLUTE){
-			termination_reason = " because a fix number of " + (int)m_currentSpec.getTerminationValue() + " iterations was specified.";
+			if(m_currentIteration < m_currentSpec.getTerminationValue()){
+				termination_reason = " because through the last iteration no value has changed.";
+			}else{
+				termination_reason = " because a fix number of " + (int)m_currentSpec.getTerminationValue() + " iterations was specified.";
+			}
 		}else if(m_currentSpec.getTerminationMethod() == TerminationMethod.RELATIVE){
 			termination_reason = " because through the last iteration no value changed by more than " + (m_currentSpec.getTerminationValue()*100) + "%.";
 		}
@@ -227,10 +237,12 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	}
 	
 	private boolean isDone(){
+		double precisionTermination = m_currentSpec.getTerminationValue();
 		switch(m_currentSpec.getTerminationMethod()){
 		case ABSOLUTE :
 			if(m_currentIteration >= m_currentSpec.getTerminationValue()) return true;
-			break;
+			// otherwise, continue checking whether no value changed:
+			precisionTermination = 0;
 		case RELATIVE :
 //			double maxDiffPercent = -1.0; // red flag
 			BigDecimal maxDiffPercent = new BigDecimal(-1);
@@ -278,7 +290,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //			if(maxDiffPercent <= m_currentSpec.getTerminationValue()){
 //				return true;
 //			}
-			if(maxDiffPercent.compareTo(new BigDecimal(m_currentSpec.getTerminationValue())) <= 0){
+			if(maxDiffPercent.compareTo(new BigDecimal(precisionTermination)) <= 0){
 				return true;
 			}
 			break;
@@ -297,60 +309,8 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		}
 	}
 	
-	public String getSimiDevelopment(){
-		if(m_simiDevelopment.keySet().size() == 0) return "";
-		StringBuilder sb = new StringBuilder();
-		int preLength = (m_simiDevelopment.keySet().size() + "").length() + 1;
-		for(int i = 0; i<preLength-2; i++){
-			sb.append(" ");
-		}sb.append("i ");
-		List<SimilarityValue> values = new ArrayList<SimilarityValue>();
-		int maxElemLength = 0;
-		for(SimilarityValue v : m_simiDevelopment.get(m_simiDevelopment.keySet().iterator().next()).keySet()){
-			values.add(v);
-			maxElemLength = Math.max(getShortForm(v).length(), maxElemLength);
-		}
-		
-		for(SimilarityValue v : values){
-			int curElemLength = getShortForm(v).length();
-			sb.append(getShortForm(v));
-			for(int i=0; i<=maxElemLength-curElemLength; i++){
-				sb.append(" ");
-			}
-		}
-		
-		sb.append("\n");
-		for(int i = 0; i<preLength + (maxElemLength+1)*values.size(); i++){
-			sb.append("-");
-		}
-		
-		sb.append("\n");
-		for(int i = 0; i<m_simiDevelopment.keySet().size(); i++){
-			for(int j=0; j<(preLength-(""+i).length())-1; j++){
-				sb.append(" ");
-			}
-			sb.append(i + " ");
-			
-			for(SimilarityValue v : values){
-				Double d = m_simiDevelopment.get(i).get(v);
-				double pot = Math.pow(10, StaticValues.DECIMAL_ACCURACY);
-				d = (double)Math.round(d*pot)/pot;
-				for(int j=0; j<maxElemLength-(""+d).length(); j++){
-					sb.append(" ");
-				}
-				sb.append(d+" ");
-			}
-			
-			
-			sb.append("\n");
-			
-		}
-		
-		return sb.toString();
-	}
-	
-	private String getShortForm(SimilarityValue v){
-		return "(" + v.getP1().getElement().toShortString() + ", " + v.getP2().getElement().toShortString() + ")";
+	public Map<Integer, Map<SimilarityValue, Double>> getSimiDevelopment(){
+		return m_simiDevelopment;
 	}
 	
 	private static PointedInterpretation getFix1(){

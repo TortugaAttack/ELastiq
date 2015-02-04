@@ -11,11 +11,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import main.StaticValues;
 
+import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
+import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
 import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
@@ -23,6 +26,15 @@ import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
 public class WeightedInputSpecificationParser {
 
 	private static final String COMMENT_PREFIX = "#";
+	
+	private static final String PAR_SMALL_MODEL = "smallModel";
+	private static final String PAR_NORMALIZING = "normalizing";
+	private static final String PAR_BASE_WEIGHT = "baseWeight";
+	private static final String PAR_ITERATIONS  = "iterations";
+	private static final String PAR_PRECISION   = "precision";
+	private static final String PAR_ACCURACY    = "accuracy";
+	private static final String PAR_LOG_LEVEL   = "log";
+	private static final String PAR_OUT_DIR   = "output";
 	
 	private static final Set<String> PRIMITIVE_MEASURE_IDS = new HashSet<String>();
 	
@@ -151,7 +163,7 @@ public class WeightedInputSpecificationParser {
 					}
 					
 				}else{
-					m_errors.add("Ignoring line \"" + line + "\" in block " + block.getBlockString());
+//					m_errors.add("Ignoring line \"" + line + "\" in block " + block.getBlockString());
 				}
 			}
 			line = br.readLine();
@@ -170,13 +182,49 @@ public class WeightedInputSpecificationParser {
 		return line;
 	}
 	
+	private boolean terminationMethodAlreadySet = false;
 	/**
 	 * Already distinguish and validate custom parameters.
 	 * @param key
 	 * @param value
 	 */
 	private void addParameter(String key, String value){
-		
+		try{
+			if(key == null || key.isEmpty() || value == null || value.isEmpty()) return;
+			GeneralParameters parameters = m_result.getParameters();
+			if(key.equals(PAR_SMALL_MODEL)){
+				parameters.enterValue(GeneralParameters.SMALL_MODEL, Boolean.parseBoolean(value));
+			}else if(key.equals(PAR_NORMALIZING)){
+				int normalizingMode = Integer.parseInt(value);
+				if(normalizingMode >= 1 && normalizingMode <= 4){
+					parameters.enterValue(GeneralParameters.NORMALIZING, normalizingMode);
+				}
+			}else if(key.equals(PAR_BASE_WEIGHT)){
+				double baseWeight = Double.parseDouble(value);
+				if(baseWeight > 0){
+					m_result.setDefaultWeight(baseWeight);
+				}
+			}else if(key.equals(PAR_ITERATIONS) && !terminationMethodAlreadySet){
+				m_result.setTerminationMethod(TerminationMethod.ABSOLUTE, Integer.parseInt(value));
+				terminationMethodAlreadySet = true;
+			}else if(key.equals(PAR_PRECISION) && !terminationMethodAlreadySet){
+				m_result.setTerminationMethod(TerminationMethod.RELATIVE, Double.parseDouble(value));
+				terminationMethodAlreadySet = true;
+			}else if(key.equals(PAR_ACCURACY)){
+				parameters.enterValue(GeneralParameters.DECIMAL_ACCURACY, Integer.parseInt(value));
+			}else if(key.equals(PAR_LOG_LEVEL)){
+				parameters.enterValue(GeneralParameters.LOG_LEVEL, Level.parse(value));
+			}else if(key.equals(PAR_OUT_DIR)){
+				File out = new File(value);
+				if(out.isDirectory()){
+					parameters.enterValue(GeneralParameters.OUT_DIR, out);
+				}
+			}else{
+				parameters.enterValue(key, value);
+			}
+		}catch(NumberFormatException e){
+			m_errors.add("Number parsing error for value " + key + ": " +e.getMessage());
+		}
 	}
 	
 	private boolean isBlockId(String line){

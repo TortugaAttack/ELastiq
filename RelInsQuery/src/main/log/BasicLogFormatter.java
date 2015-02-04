@@ -38,7 +38,10 @@ public class BasicLogFormatter extends Formatter{
 		
 		sb.append(record.getLevel() + " - ");
 		
-		sb.append(record.getSourceClassName() + " - [" + record.getSourceMethodName() + "]: ");
+		String className = record.getSourceClassName();
+		className = className.substring(className.lastIndexOf(".")+1, className.length());
+		
+		sb.append(className + " - [" + record.getSourceMethodName() + "]: ");
 		
 		sb.append(record.getMessage());
 		
