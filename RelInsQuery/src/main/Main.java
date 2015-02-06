@@ -1,18 +1,9 @@
 package main;
 
-import interpretation.ds.CanonicalDomain;
-import interpretation.ds.CanonicalInterpretation;
-import interpretation.generator.CanonicalInterpretationGenerator;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,50 +11,19 @@ import java.util.logging.Logger;
 import main.log.BasicLogFormatter;
 import main.log.CustomConsoleHandler;
 
-import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser;
-import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxEditorParser;
-import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxOntologyFormat;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.expression.OWLEntityChecker;
-import org.semanticweb.owlapi.expression.ShortFormEntityChecker;
-import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
-import org.semanticweb.owlapi.io.OWLParser;
-import org.semanticweb.owlapi.io.OWLParserFactory;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAxiom;
-import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLDataAllValuesFrom;
-import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
-import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 import org.semanticweb.owlapi.profiles.OWLProfileReport;
 import org.semanticweb.owlapi.profiles.OWLProfileViolation;
-import org.semanticweb.owlapi.util.BidirectionalShortFormProviderAdapter;
-import org.semanticweb.owlapi.util.SimpleShortFormProvider;
 
-import de.uulm.ecs.ai.owlapi.krssparser.KRSS2OntologyFormat;
-
-import owl.OntologyOperator;
-import owl.io.OWLOntologyLoader;
-import owl.io.OWLQueryParser;
-import owl.io.OntologyFileSimplifier;
-import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 import similarity.algorithms.generalEL.GeneralELOutputGenerator;
 import similarity.algorithms.generalEL.GeneralELRelaxedInstancesAlgorithm;
 import similarity.algorithms.specifications.BasicInputSpecification;
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.IInputSpecification;
-import similarity.algorithms.specifications.OutputType;
-import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.algorithms.specifications.parser.WeightedInputSpecificationParser;
-import similarity.measures.entities.DefaultEntitySimilarityMeasure;
-import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
-import uk.ac.manchester.cs.owlapi.dlsyntax.parser.DLSyntaxParser;
 
 public class Main {
 	
@@ -126,7 +86,7 @@ public class Main {
 		
 		String resultMsg = answers.size() + " elements have a similarity greater than " + INPUT.getThreshold() + " to " + INPUT.getQuery() + "\n";
 		if(LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE){
-			resultMsg += outGenerator.renderInstanceList(answers);
+			resultMsg += outGenerator.renderInstanceList();
 		}
 		LOG.info(resultMsg);
 		

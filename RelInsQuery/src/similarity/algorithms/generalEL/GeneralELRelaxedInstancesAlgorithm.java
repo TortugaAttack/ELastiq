@@ -41,6 +41,7 @@ import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import util.ConsolePrinter;
 import util.EasyMath;
+import util.SetMath;
 
 public class GeneralELRelaxedInstancesAlgorithm implements
 		IRelaxedInstancesAlgorithm<BasicInputSpecification> {
@@ -53,7 +54,11 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	
 	private BasicInputSpecification m_currentSpec;
 	
+	private boolean m_specChanged;
+	
 	private Map<Integer, Map<SimilarityValue, Double>> m_simiDevelopment;
+	
+	private Map<OWLNamedIndividual, Double> m_answers;
 	
 	private int m_currentIteration;
 	
@@ -67,7 +72,11 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //			System.exit(1);
 			return Collections.emptyMap();
 		}
-		m_currentSpec = specification;
+		if(m_currentSpec == null || !m_currentSpec.equals(specification)){
+			m_specChanged = true;
+			m_currentSpec = specification;
+		}
+		
 		m_simiDevelopment = new HashMap<Integer, Map<SimilarityValue,Double>>();
 		
 		CanonicalInterpretationGenerator generator = new CanonicalInterpretationGenerator(); // KB mode first
@@ -149,6 +158,8 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			GeneralELOutputGenerator gen = new GeneralELOutputGenerator(this, m_currentSpec);
 			sb.append(gen.renderASCIITable());
 			LOG.info(sb.toString());
+			
+			LOG.fine("Subset creation produced an average of " + SetMath.getAvgSubsets() + " subsets (" + SetMath.maxSubsets + " max).");
 		}
 		
 		String termination_reason = "";
@@ -172,24 +183,71 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				}
 			}
 		}
-		
+		m_answers = results;
+		m_specChanged = false;
 		return results;
 	}
 	
 	private double similarity(PointedInterpretation p, PointedInterpretation q, int i){
-		return (simCN(p, q) + simCN(q, p) + simSC(p, q, i) + simSC(q, p, i))
-				/
-				(weightedSumClasses(p.getElement().getInstantiators())
-					+ weightedSumClasses(q.getElement().getInstantiators())
-					+ weightedSumRoles(p.getElement().getSuccessorObjects())
-					+ weightedSumRoles(q.getElement().getSuccessorObjects()));
+		double maxSim = (simCN(p, q) + simCN(q, p) + simSC(p, q, i) + simSC(q, p, i))
+						/
+						(weightedSumClasses(p.getElement().getInstantiators())
+						+ weightedSumClasses(q.getElement().getInstantiators())
+						+ weightedSumRoles(p.getElement().getSuccessorObjects())
+						+ weightedSumRoles(q.getElement().getSuccessorObjects()));
+		Set<OWLClass> usedCN = q.getElement().getInstantiators();
+		Set<RoleAssertion> usedSC = q.getElement().getSuccessorObjects(q.getInterpretation());
+		// iterate over subsets and maximize the similarity
+		Set<OWLClass> pInstantiators = p.getElement().getInstantiators();
+		Set<RoleAssertion> pSuccessors = p.getElement().getSuccessorObjects(p.getInterpretation());
+//		for(Set<OWLClass> qInstantiators : SetMath.getAllSubsets(q.getElement().getInstantiators())){
+//			for(Set<RoleAssertion> qSuccessors : SetMath.getAllSubsets(q.getElement().getSuccessorObjects(q.getInterpretation()))){
+		for(Set<OWLClass> qInstantiators : SetMath.getAllClassSubsetsSmart(pInstantiators, q.getElement().getInstantiators())){
+			for(Set<RoleAssertion> qSuccessors : SetMath.getAllRoleSubsetsSmart(pSuccessors, q.getElement().getSuccessorObjects(q.getInterpretation()))){
+				double weightedSum = weightedSumClasses(p.getElement().getInstantiators())
+									+ weightedSumClasses(qInstantiators)
+									+ weightedSumRoles(p.getElement().getSuccessorObjects(p.getInterpretation()))
+									+ weightedSumRoles(qSuccessors);
+				double newSim = 1;
+				if(weightedSum > 0){
+					newSim = (simCN(pInstantiators, qInstantiators) + simCN(qInstantiators, pInstantiators)
+									+ simSC(pSuccessors, qSuccessors, i) + simSC(qSuccessors, pSuccessors, i))
+									/ weightedSum;
+//							maxSim = Math.max(maxSim, newSim);
+				}
+				if(newSim > maxSim){
+					maxSim = newSim;
+					usedCN = qInstantiators;
+					usedSC = qSuccessors;
+				}
+			}
+		}
+		LOG.fine("Similarity on iteration " + i + " between " + p + " and " + q + " using S_CN = " + usedCN + " and S_SC = " + usedSC + " is " + maxSim);
+		return maxSim;
 	}
 	
+	/**
+	 * Returns the similarity of best concept name pairings for all instantiators of
+	 * the domain element of p and q.
+	 * @param p : first pointed interpretation
+	 * @param q : second pointed interpretation
+	 * @return the similarity of concept name pairings over all  instantiators
+	 */
 	private double simCN(PointedInterpretation p, PointedInterpretation q){
+		return simCN(p.getElement().getInstantiators(), q.getElement().getInstantiators());
+	}
+	
+	/**
+	 * Returns the similarity of best concept name pairings for given sets of instantiators.
+	 * @param p : first set of instantiators
+	 * @param q : second set of instantiators
+	 * @return the similarity of concept name pairings overthe given sets of instantiators
+	 */
+	private double simCN(Set<OWLClass> pInstantiators, Set<OWLClass> qInstantiators){
 		double sum = 0.0;
-		for(OWLClass a : p.getElement().getInstantiators()){
+		for(OWLClass a : pInstantiators){
 			double max = 0.0;
-			for(OWLClass b : q.getElement().getInstantiators()){
+			for(OWLClass b : qInstantiators){
 				max = Math.max(max, m_currentSpec.getPrimitiveMeasure().similarity(a, b));
 			}
 			sum += m_currentSpec.getWeight(a) * max;
@@ -199,15 +257,21 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	}
 	
 	private double simSC(PointedInterpretation p, PointedInterpretation q, int iterations){
+		return simSC(p.getElement().getSuccessorObjects(p.getInterpretation()),
+				q.getElement().getSuccessorObjects(q.getInterpretation()), iterations);
+	}
+	
+	private double simSC(Set<RoleAssertion> pSuccessors, Set<RoleAssertion> qSuccessors, int iterations){
 		double sum = 0.0;
 		double w = m_currentSpec.getDiscountingFactor();
 //		System.out.println(w + " = w -> (w + (1-w)*0) = " + (w + (1 - w) * 0));
-		for(RoleAssertion r : p.getElement().getSuccessorObjects(p.getInterpretation())){
+		for(RoleAssertion r : pSuccessors){
 			double max = 0.0;
-			for(RoleAssertion s : q.getElement().getSuccessorObjects(q.getInterpretation())){
-				PointedInterpretation pn = new PointedInterpretation(p.getInterpretation(), r.getTo());
-				PointedInterpretation qn = new PointedInterpretation(q.getInterpretation(), s.getTo());
+			for(RoleAssertion s : qSuccessors){
+				PointedInterpretation pn = r.getToPointedInterpretation();
+				PointedInterpretation qn = s.getToPointedInterpretation();
 				double v = m_currentSpec.getPrimitiveMeasure().similarity(r.getProperty(), s.getProperty());
+				
 				if(v > 0){ // do not create unnecessary tasks
 					v = v * ((1 - w) + w * SimilarityValueFactory.getFactory().getSimilarityValue(pn, qn, iterations-1).getValue(iterations-1) ); // version of the example
 //					v = v * (w + (1 - w) * SimilarityValueFactory.getFactory().getSimilarityValue(pn, qn, iterations-1).getValue(iterations-1) ); // version of the definition
@@ -311,6 +375,14 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	
 	public Map<Integer, Map<SimilarityValue, Double>> getSimiDevelopment(){
 		return m_simiDevelopment;
+	}
+	
+	public Map<OWLNamedIndividual, Double> getAnswers(){
+		if(m_answers == null || m_specChanged){
+			LOG.warning("Trying to retrieve answers that are not computed yet for the current specification.");
+			return Collections.emptyMap();
+		}
+		return m_answers;
 	}
 	
 	private static PointedInterpretation getFix1(){

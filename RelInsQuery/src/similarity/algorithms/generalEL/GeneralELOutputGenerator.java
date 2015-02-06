@@ -17,6 +17,12 @@ import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import util.EasyMath;
 
+/**
+ * Supplies different rendering strategies for {@link OutputType} and writing them to 
+ * a specified file.
+ * @author Maximilian Pensel - maximilian.pensel@gmx.de
+ *
+ */
 public class GeneralELOutputGenerator {
 
 	private GeneralELRelaxedInstancesAlgorithm m_algorithm;
@@ -64,38 +70,15 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderInstanceList(){
-		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment();
-		int maxIteration = 0;
-		for(Integer i : simiDevelopment.keySet()){
-			maxIteration = Math.max(maxIteration, i);
-		}
-		final Map<OWLNamedIndividual, Double> answers = new HashMap<OWLNamedIndividual, Double>();
-		
-		double threshold = m_specification.getThreshold();
-		for(SimilarityValue v : simiDevelopment.get(maxIteration).keySet()){
-			if(v.getValue(maxIteration) > threshold){
-				answers.put((OWLNamedIndividual)v.getP2().getElement().getId(), v.getValue(maxIteration));
-			}
-		}
-		
-		return renderInstanceList(answers);
+		return renderInstanceList(m_algorithm.getAnswers());
 	}
 	
 	public String renderInstanceList(final Map<OWLNamedIndividual, Double> instances){
-		List<OWLNamedIndividual> sorted = new ArrayList<OWLNamedIndividual>();
-		for(OWLNamedIndividual ind : instances.keySet())
-			sorted.add(ind);
-		
-		Collections.sort(sorted, new Comparator<OWLNamedIndividual>() {
-			@Override
-			public int compare(OWLNamedIndividual o1, OWLNamedIndividual o2) {
-				if(instances.get(o1) > instances.get(o2))
-					return -1;
-				if(instances.get(o1) < instances.get(o2))
-					return 1;
-				return 0;
-			}
-		});
+		return renderInstanceList(instances, false);
+	}
+	
+	public String renderInstanceList(final Map<OWLNamedIndividual, Double> instances, boolean ascending){
+		List<OWLNamedIndividual> sorted = getSortedAnswers(instances, ascending);
 		StringBuilder sb = new StringBuilder();
 		for(OWLNamedIndividual ind : sorted){
 			sb.append(ind.toString() + "\t" + "similarity: " + EasyMath.round(instances.get(ind), 
@@ -105,29 +88,39 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderCSVTable(){
-		String colSep = "\t";
-		String lineSep = ";\n";
+		return renderCSVTable(false);
+	}
+	
+	public String renderCSVTable(boolean ascending){
+		final String COL_SEP = "\t";
+		final String LINE_SEP = ";\n";
 		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment();
 		StringBuilder sb = new StringBuilder();
 		// table head
 		sb.append("i");
-		List<SimilarityValue> values = new ArrayList<SimilarityValue>(); 
-		for(SimilarityValue v : simiDevelopment.get((Integer)simiDevelopment.keySet().iterator().next()).keySet()){
-			sb.append(colSep + getShortForm(v));
-			values.add(v);
-		}sb.append(lineSep);
+		
+		List<SimilarityValue> sorted = getSortedAnswers(simiDevelopment.get(simiDevelopment.size()-1), ascending);
+		for(SimilarityValue v : sorted){
+			sb.append(COL_SEP + getShortForm(v));
+		}sb.append(LINE_SEP);
+		
+		// table body
 		for(Integer i : simiDevelopment.keySet()){
 			sb.append(i);
-			for(SimilarityValue v : values){
-				sb.append(colSep + EasyMath.round(simiDevelopment.get(i).get(v),
+			for(SimilarityValue v : sorted){
+				sb.append(COL_SEP + EasyMath.round(simiDevelopment.get(i).get(v),
 						(Integer)m_specification.getParameters().getValue(GeneralParameters.DECIMAL_ACCURACY))
 						);
-			}sb.append(lineSep);
+			}sb.append(LINE_SEP);
 		}
 		return sb.toString();
 	}
 	
 	public String renderASCIITable(){
+		return renderASCIITable(false);
+	}
+	
+	public String renderASCIITable(boolean ascending){
 		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment();
 		if(simiDevelopment.keySet().size() == 0) return "";
 		StringBuilder sb = new StringBuilder();
@@ -135,29 +128,28 @@ public class GeneralELOutputGenerator {
 		for(int i = 0; i<preLength-1; i++){
 			sb.append(" ");
 		}sb.append("i");
-		List<SimilarityValue> values = new ArrayList<SimilarityValue>();
+		List<SimilarityValue> sorted = getSortedAnswers(simiDevelopment.get(simiDevelopment.size()-1), ascending);
 		
 		// determine maximal width of any element per column
 		Map<SimilarityValue, Integer> widths = new HashMap<SimilarityValue, Integer>();
 		// init with table head
-		for(SimilarityValue v : simiDevelopment.get(simiDevelopment.keySet().iterator().next()).keySet()){
-			values.add(v);
+		for(SimilarityValue v : sorted){
 			widths.put(v, getShortForm(v).length());
 		}
 		for(Integer i : simiDevelopment.keySet()){
-			for(SimilarityValue v : values){
+			for(SimilarityValue v : sorted){
 				double value = simiDevelopment.get(i).get(v);
 				value = EasyMath.round(value, (Integer)m_specification.getParameters().getValue(GeneralParameters.DECIMAL_ACCURACY));
 				widths.put(v, Math.max((value+"").length(), widths.get(v)));
 			}
 		}
 		int totalWidth = preLength;
-		for(SimilarityValue v : values){
+		for(SimilarityValue v : sorted){
 			totalWidth += 1 + widths.get(v); // +1 for spacing
 		}
 
 		// continue table-head
-		for(SimilarityValue v : values){
+		for(SimilarityValue v : sorted){
 			int curElemLength = getShortForm(v).length();
 			for(int i=0; i<=widths.get(v) - curElemLength; i++){
 				sb.append(" ");
@@ -177,7 +169,7 @@ public class GeneralELOutputGenerator {
 			}
 			sb.append(i);
 			
-			for(SimilarityValue v : values){
+			for(SimilarityValue v : sorted){
 				Double d = EasyMath.round(simiDevelopment.get(i).get(v),
 						(Integer)m_specification.getParameters().getValue(GeneralParameters.DECIMAL_ACCURACY));
 				for(int j=0; j<=widths.get(v)-(""+d).length(); j++){
@@ -196,5 +188,28 @@ public class GeneralELOutputGenerator {
 	
 	private String getShortForm(SimilarityValue v){
 		return "(" + v.getP1().getElement().toShortString() + ", " + v.getP2().getElement().toShortString() + ")";
+	}
+	
+	private <T> List<T> getSortedAnswers(final Map<T, Double> instances, boolean ascending){
+		List<T> sorted = new ArrayList<T>();
+		for(T ind : instances.keySet())
+			sorted.add(ind);
+		
+		// sorts answers descending by their similarity
+		Collections.sort(sorted, new Comparator<T>() {
+			@Override
+			public int compare(T o1, T o2) {
+				if(instances.get(o1) > instances.get(o2))
+					return -1;
+				if(instances.get(o1) < instances.get(o2))
+					return 1;
+				return 0;
+			}
+		});
+		
+		if(ascending)
+			Collections.reverse(sorted);
+		
+		return sorted;
 	}
 }

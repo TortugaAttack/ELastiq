@@ -15,24 +15,37 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import owl.IOWLOntologyExtension;
 import owl.OntologyOperator;
-
+/**
+ * Generic type DomainNode, identification of domain nodes may vary between use-cases.
+ * 
+ * @author Maximilian Pensel - maximilian.pensel@gmx.de
+ *
+ * @param <T> : Specifies the type for the identifier of the domain node.
+ */
 public class DomainNode<T> {
 	
 	private T m_id;
 	
 	private Set<OWLClass> m_instantiators;
+	
 	private HashMap<OWLObjectProperty, Set<DomainNode<?>>> m_successors;
 	
-	public DomainNode() {
-		this(null);
-	}
-	
+	/**
+	 * Creates the domain node with a given identifier.
+	 * @param id : The generic identifier object.
+	 */
 	public DomainNode(T id) {
 		m_id = id;
 		m_instantiators = new HashSet<OWLClass>();
 		m_successors = new HashMap<OWLObjectProperty, Set<DomainNode<?>>>();
 	}
 	
+	/**
+	 * Add an instantiator for this DomainNode, that is an OWLClass such that 
+	 * @l
+	 * @param A
+	 * @return
+	 */
 	public boolean addInstantiator(OWLClass A){
 		return m_instantiators.add(A);
 	}

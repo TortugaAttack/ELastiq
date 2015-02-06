@@ -27,9 +27,7 @@ public class RoleAssertion {
 	}
 	
 	public RoleAssertion(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property, CanonicalInterpretation pointed) {
-		m_from = from;
-		m_to = to;
-		m_property = property;
+		this(from, to, property);
 		if(pointed != null)
 			m_toPointed = new PointedInterpretation(pointed, to);
 	}
@@ -44,6 +42,15 @@ public class RoleAssertion {
 	
 	public DomainNode<?> getTo() {
 		return m_to;
+	}
+	
+	public PointedInterpretation getToPointedInterpretation(){
+		return m_toPointed;
+	}
+	
+	@Override
+	public String toString() {
+		return "(" + m_property + ", " + m_toPointed.getElement().getId() + ")";
 	}
 }
 
