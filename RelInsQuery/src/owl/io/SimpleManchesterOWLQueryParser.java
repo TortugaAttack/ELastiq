@@ -25,7 +25,7 @@ public class SimpleManchesterOWLQueryParser extends OWLQueryParser {
 		OWLEntityChecker entityChecker = new ShortFormEntityChecker(
 				new BidirectionalShortFormProviderAdapter(
 						Main.getOntologyManager(), ontology.getImportsClosure(),
-						new SimpleShortFormProvider()));
+						new SimpleIntegerAcceptingShortFormProvider()));
 		
 		m_parser = new ManchesterOWLSyntaxClassExpressionParser(Main.getOntologyManager().getOWLDataFactory(),
 				entityChecker);

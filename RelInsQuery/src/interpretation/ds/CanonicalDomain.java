@@ -42,9 +42,9 @@ public class CanonicalDomain implements IDomain {
 	/**
 	 * Create and store a new domain element, if the id is unused.
 	 * @param expr - domain element id, an OWLClassExpression
-	 * @return true if the element was actually added, false if an element with that id already exists
+	 * @return the associated domain element, no matter if it was newly created or already existed
 	 */
-	private DomainNode<OWLClassExpression> addDomainElement(OWLClassExpression expr){
+	public DomainNode<OWLClassExpression> addDomainElement(OWLClassExpression expr){
 		if(!m_conceptElements.containsKey(expr)){
 			m_conceptElements.put(expr, new DomainNode<OWLClassExpression>(expr));
 		}
@@ -55,9 +55,9 @@ public class CanonicalDomain implements IDomain {
 	/**
 	 * Create and store a new domain element, if the id is unused.
 	 * @param expr - domain element id, an OWLIndividual
-	 * @return true if the element was actually added, false if an element with that id already exists
+	 * @return the associated domain element, no matter if it was newly created or already existed
 	 */
-	private DomainNode<OWLNamedIndividual> addDomainElement(OWLNamedIndividual ind){
+	public DomainNode<OWLNamedIndividual> addDomainElement(OWLNamedIndividual ind){
 		if(!m_individualElements.containsKey(ind)){
 			m_individualElements.put(ind, new DomainNode<OWLNamedIndividual>(ind));
 		}
@@ -65,58 +65,13 @@ public class CanonicalDomain implements IDomain {
 		return m_individualElements.get(ind);
 	}
 	
-	/**
-	 * Fetches the DomainNode associated with the given OWLClassExpression.
-	 * Does NOT create a domain element if none exists for the given identifier.
-	 * @param c
-	 * @param expr
-	 * @return true if the instantiator has actually been added
-	 */
-//	public boolean addElementInstantiator(OWLClass c, OWLClassExpression expr){
-//		if(m_conceptElements.containsKey(expr)){
-//			m_conceptElements.get(expr).addInstantiator(c);
-//		}
-//		return false;
-//	}
-	
-	/**
-	 * Fetches the DomainNode associated with the given OWLIndividual.
-	 * Does NOT create a domain element if none exists for the given identifier.
-	 * @param c
-	 * @param ind
-	 * @return true if the instantiator has actually been added
-	 */
-//	public boolean addElementInstantiator(OWLClass c, OWLIndividual ind){
-//		if(m_individualElements.containsKey(ind)){
-//			m_individualElements.get(ind).addInstantiator(c);
-//		}
-//		return false;
-//	}
-	
-	/**
-	 * Simply passes the instantiator through to the given domain element
-	 * @param c
-	 * @param d
-	 * @return true if the instantiator has actually been added
-	 */
-//	public boolean addElementInstantiator(OWLClass c, DomainNode<?> d){
-//		return d.addInstantiator(c);
-//	}
-	
-	/**
-	 * For now adding successors directly between DomainNode elements suffices.
-	 * ToDo: implements all variants of adding successor relations between OWLClassExpression ids and
-	 * OWLIndividual ids.
-	 * 
-	 * Will be done directly by the generator, since he is traversing DomainNode elements anyway
-	 * @param r
-	 * @param from
-	 * @param to
-	 * @return true if the relation was actually added
-	 */
-//	public boolean addSuccessorRelation(OWLObjectProperty r, DomainNode<?> from, DomainNode<?> to){
-//		return from.addSuccessor(r, to);
-//	}
+	public void removeDomainNode(DomainNode<?> node){
+		if(node.getId() instanceof OWLClassExpression){
+			m_conceptElements.remove(node.getId());
+		}else if(node.getId() instanceof OWLNamedIndividual){
+			m_individualElements.remove(node.getId());
+		}
+	}
 	
 	public Map<OWLClassExpression, DomainNode<OWLClassExpression>> getConceptElements() {
 		return m_conceptElements;
@@ -156,5 +111,9 @@ public class CanonicalDomain implements IDomain {
 			sb.append(m_individualElements.get(ind).toString() + "\n");
 		}
 		return sb.toString();
+	}
+
+	public Integer size() {
+		return m_individualElements.size() + m_conceptElements.size();
 	}
 }

@@ -2,23 +2,27 @@ package interpretation.generator;
 
 import interpretation.ds.DomainNode;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
+
+import main.StaticValues;
 
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
+import tracker.BlockOutputMode;
+import tracker.TimeTracker;
+
 public class TBoxDomainElementGenerator implements
 		IDomainElementGenerator {
 
+	private static final TimeTracker TRACKER = TimeTracker.getInstance();
+	
 	private CanonicalInterpretationGenerator m_generator;
 	
 	private Set<OWLClass> m_extraClasses;
@@ -34,8 +38,10 @@ public class TBoxDomainElementGenerator implements
 	@Override
 	public void generate(IInterpretationGenerator g, boolean small) { // small mode ignored here
 		if(!(g instanceof CanonicalInterpretationGenerator)) return;
+		TRACKER.start(StaticValues.TIME_DOMAIN_ELEMENTS_CREATION);
 		m_generator = (CanonicalInterpretationGenerator)g;
 		
+		TRACKER.start(StaticValues.TIME_ER_DOMAIN_ELEM);
 		// add all additionally specified elements and their instantiators
 		for(OWLClass c : m_extraClasses){
 			DomainNode<OWLClassExpression> node = (DomainNode<OWLClassExpression>)m_generator.getDomain().addDomainElement(c);
@@ -43,15 +49,20 @@ public class TBoxDomainElementGenerator implements
 			addInstantiators(node);
 		}
 		
+		m_generator.getLogger().info(m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions().size() + " Existential restrictions to generate domain elements from.");
 		// add all relevant domain elements and their instantiators
 		for(OWLObjectSomeValuesFrom some : m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions()){
 			DomainNode<OWLClassExpression> node = (DomainNode<OWLClassExpression>)m_generator.getDomain().addDomainElement(some.getFiller());
 			
 			addInstantiators(node);
 		}
+		TRACKER.stop(StaticValues.TIME_ER_DOMAIN_ELEM);
+		
+		TRACKER.stop(StaticValues.TIME_DOMAIN_ELEMENTS_CREATION);
 	}
 	
 	private void addInstantiators(DomainNode<OWLClassExpression> node){
+		TRACKER.start(StaticValues.TIME_ADD_INSTANTIATORS, BlockOutputMode.COMPLETE, true);
 		OWLClass classRep = m_generator.getClassRepresentation(node.getId());
 		if(classRep != null){
 			OWLReasoner reasoner = m_generator.getOntologyOperator().getReasoner();
@@ -74,5 +85,6 @@ public class TBoxDomainElementGenerator implements
 					node.addInstantiator(inst);
 			}
 		}
+		TRACKER.stop(StaticValues.TIME_ADD_INSTANTIATORS);
 	}
 }

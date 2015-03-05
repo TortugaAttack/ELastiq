@@ -6,6 +6,9 @@ import interpretation.ds.DomainNode;
 import interpretation.ds.PointedInterpretation;
 import interpretation.ds.RoleAssertion;
 import interpretation.generator.CanonicalInterpretationGenerator;
+import interpretation.generator.IInterpretationGenerator;
+import interpretation.generator.IterativeKBInterpretationGenerator;
+import interpretation.generator.IterativeQTBoxModelGenerator;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -39,6 +42,8 @@ import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
+import tracker.BlockOutputMode;
+import tracker.TimeTracker;
 import util.ConsolePrinter;
 import util.EasyMath;
 import util.SetMath;
@@ -47,6 +52,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		IRelaxedInstancesAlgorithm<BasicInputSpecification> {
 
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
+	private static final TimeTracker TRACKER = TimeTracker.getInstance();
 	
 	private CanonicalInterpretation m_TBoxModel;
 	
@@ -79,16 +85,26 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		
 		m_simiDevelopment = new HashMap<Integer, Map<SimilarityValue,Double>>();
 		
-		CanonicalInterpretationGenerator generator = new CanonicalInterpretationGenerator(); // KB mode first
+		int model_normalizing = (int)m_currentSpec.getParameters().getValue(GeneralParameters.NORMALIZING);
+		
+		TRACKER.start(StaticValues.TIME_MODEL_KB, BlockOutputMode.IN_TREE);
+//		IInterpretationGenerator generator = new CanonicalInterpretationGenerator(2 == model_normalizing); // KB mode first
+		IInterpretationGenerator generator = new IterativeKBInterpretationGenerator(2 == model_normalizing); // KB mode first
 		generator.setSmallCreationFlag((boolean)m_currentSpec.getParameters().getValue(GeneralParameters.SMALL_MODEL));
+		generator.setLogger(LOG);
 		m_KBModel = generator.generate(specification.getOntology());
 		m_KBModel.setName("I_KB");
+		TRACKER.stop(StaticValues.TIME_MODEL_KB);
 		
-		generator = new CanonicalInterpretationGenerator(specification.getQuery()); // TBox mode second, it alters the TBox
+		TRACKER.start(StaticValues.TIME_MODEL_QT, BlockOutputMode.IN_TREE);
+//		generator = new CanonicalInterpretationGenerator(specification.getQuery(), 2 == model_normalizing); // TBox mode second, it alters the TBox
+		generator = new IterativeQTBoxModelGenerator(specification.getQuery(), 2 == model_normalizing);
 		generator.setSmallCreationFlag((boolean)m_currentSpec.getParameters().getValue(GeneralParameters.SMALL_MODEL));
+		generator.setLogger(LOG);
 		m_TBoxModel = generator.generate(specification.getOntology());
 		OWLClass queryClass = generator.getClassRepresentation(specification.getQuery());
 		m_TBoxModel.setName("I_QT");
+		TRACKER.stop(StaticValues.TIME_MODEL_QT);
 		
 		// show everything so far (incl. flattened ontology in order to know what the intermediaries are defined as)
 		if(LOG.getLevel() == Level.FINE){
@@ -109,6 +125,10 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 
 		LOG.info("Start finding the relaxed instances with greater similarity to " + specification.getQuery()
 				+ " than " + m_currentSpec.getThreshold());
+		
+		TRACKER.stop(StaticValues.TIME_PREPROCESSING);
+		
+		TRACKER.start(StaticValues.TIME_MAIN_ALGO, BlockOutputMode.IN_TREE);
 		
 		// TODO compute relaxed instances
 		m_factory = SimilarityValueFactory.getFactory();
@@ -132,7 +152,13 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		boolean storeDevelopment = m_currentSpec.getParameters().getOutputs().contains(OutputType.ASCII) ||
 									m_currentSpec.getParameters().getOutputs().contains(OutputType.CSV);
 		while(!isDone()){ // do until termination condition fires
+			TRACKER.start(StaticValues.TIME_ITERATION);
 			m_currentIteration++;
+			
+			if(m_currentIteration % 10 == 0){
+				LOG.info("iteration: " + m_currentIteration);
+			}
+			
 			while(!m_factory.isPoolEmpty()){ // empty the task pool
 				SimilarityValue v = m_factory.getNextTask();
 				v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));
@@ -150,14 +176,27 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			if(storeDevelopment){
 				storeCurrentSimiDev(m_factory, m_currentIteration);
 			}
+			TRACKER.stop(StaticValues.TIME_ITERATION);
+		}
+		// main algorithm done, collect result sets (and print ?!)
+		
+		m_answers = new HashMap<OWLNamedIndividual, Double>();
+		for(PointedInterpretation p : m_factory.getValuesOfInterest().keySet()){
+			for(SimilarityValue v : m_factory.getValuesOfInterest().get(p).values()){
+				if(v.getValue(m_currentIteration) >= m_currentSpec.getThreshold()){
+					m_answers.put((OWLNamedIndividual)v.getP2().getElement().getId(), v.getValue(m_currentIteration));
+				}
+			}
 		}
 		
-		if(storeDevelopment && (LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE)){
+		if(storeDevelopment && (LOG.getLevel().intValue() >= Level.FINE.intValue())){
 			StringBuilder sb = new StringBuilder();
 			sb.append("Development of interesting similarity values:\n");
 			GeneralELOutputGenerator gen = new GeneralELOutputGenerator(this, m_currentSpec);
 			sb.append(gen.renderASCIITable());
 			LOG.info(sb.toString());
+			
+			LOG.info("All the individuals that are not listed in the table above are totally dissimilar. (sim = 0)");
 			
 			LOG.fine("Subset creation produced an average of " + SetMath.getAvgSubsets() + " subsets (" + SetMath.maxSubsets + " max).");
 		}
@@ -174,18 +213,11 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		}
 		LOG.info("The computation stopped after " + m_currentIteration + " iterations" + termination_reason);
 		
-		Map<OWLNamedIndividual, Double> results = new HashMap<OWLNamedIndividual, Double>();
-		
-		for(PointedInterpretation p : m_factory.getValuesOfInterest().keySet()){
-			for(SimilarityValue v : m_factory.getValuesOfInterest().get(p).values()){
-				if(v.getValue(m_currentIteration) >= m_currentSpec.getThreshold()){
-					results.put((OWLNamedIndividual)v.getP2().getElement().getId(), v.getValue(m_currentIteration));
-				}
-			}
-		}
-		m_answers = results;
 		m_specChanged = false;
-		return results;
+		
+		TRACKER.stop(StaticValues.TIME_MAIN_ALGO);
+		
+		return m_answers;
 	}
 	
 	private double similarity(PointedInterpretation p, PointedInterpretation q, int i){
@@ -334,18 +366,13 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //					MathContext mc = new MathContext(StaticValues.DECIMAL_ACCURACY);
 //					oldV = oldV.round(mc);
 //					newV = newV.round(mc);
-					
-					BigDecimal diff = new BigDecimal(2); // will be reset to 1
-					if(!oldV.equals(BigDecimal.ZERO)){ // if oldV is 0, set to 100% difference
-						diff = newV.divide(oldV, RoundingMode.HALF_UP);
-					}
-					
-					if(newV.compareTo(oldV) >= 0){ // geq
-						diff = diff.subtract(BigDecimal.ONE);
-					}
-					
-					if(diff.compareTo(new BigDecimal(0)) < 0){
-						diff = BigDecimal.ONE;
+					BigDecimal diff = new BigDecimal(0);
+					if(newV.subtract(oldV).compareTo(BigDecimal.ZERO) > 0){ // if difference > 0 calculate diff
+						if(oldV.equals(BigDecimal.ZERO) || oldV.equals(new BigDecimal(-1))){ // prevents division by 0 and stopping at iteration 0
+							diff = BigDecimal.ONE;
+						}else{ // now newV > oldV > 0  (by Banach's fixpoint (?))
+							diff = newV.divide(oldV, RoundingMode.HALF_UP).subtract(BigDecimal.ONE);
+						}
 					}
 					
 					maxDiffPercent = diff.max(maxDiffPercent);
@@ -354,6 +381,8 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //			if(maxDiffPercent <= m_currentSpec.getTerminationValue()){
 //				return true;
 //			}
+			if(m_currentIteration % 10 == 0)
+				LOG.info("max diff: " + maxDiffPercent.toString());
 			if(maxDiffPercent.compareTo(new BigDecimal(precisionTermination)) <= 0){
 				return true;
 			}
@@ -374,7 +403,25 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	}
 	
 	public Map<Integer, Map<SimilarityValue, Double>> getSimiDevelopment(){
-		return m_simiDevelopment;
+		return getSimiDevelopment(true);
+	}
+	
+	public Map<Integer, Map<SimilarityValue, Double>> getSimiDevelopment(boolean includeZeroResults){
+		if(includeZeroResults){
+			return m_simiDevelopment;
+		}else{
+			Map<Integer, Map<SimilarityValue, Double>> reduced = new HashMap<Integer, Map<SimilarityValue,Double>>();
+			Map<SimilarityValue, Double> finalValues = m_simiDevelopment.get(m_simiDevelopment.keySet().size()-1);
+			for(Integer i : m_simiDevelopment.keySet()){
+				reduced.put(i, new HashMap<SimilarityValue, Double>());
+				for(SimilarityValue v : m_simiDevelopment.get(i).keySet()){
+					if(finalValues.get(v) > 0){
+						reduced.get(i).put(v, m_simiDevelopment.get(i).get(v));
+					}
+				}
+			}
+			return reduced;
+		}
 	}
 	
 	public Map<OWLNamedIndividual, Double> getAnswers(){

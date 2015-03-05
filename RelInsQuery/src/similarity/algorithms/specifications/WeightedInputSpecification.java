@@ -13,8 +13,11 @@ import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
+import similarity.EntityWeightingFunction;
+import similarity.measures.entities.DefaultEntitySimilarityMeasure;
 import similarity.measures.entities.IEntitySimilarityMeasure;
 import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
+import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;
 
 public class WeightedInputSpecification extends BasicInputSpecification {
 	
@@ -22,15 +25,12 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 	
 	private double m_discountingFactor;
 	
-	private Map<OWLEntity, Double> m_weightingFunction;
-	
 	private TerminationMethod m_termination;
 	
 	private double m_terminationValue;
 	
 	public WeightedInputSpecification() {
 		super();
-		m_weightingFunction = new HashMap<OWLEntity, Double>();
 	}
 	
 	@Override
@@ -53,11 +53,6 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 			return false;
 		}
 		
-		if(m_defaultWeight < 0){
-			LOG.severe("Default entity weight must be greater or equal to 0");
-			return false;
-		}
-		
 		return super.isValid();
 	}
 	
@@ -65,12 +60,14 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 		this.m_discountingFactor = discount;
 	}
 	
-	public void setPrimitiveMeasure(IEntitySimilarityMeasure measure){
+	public void setPrimitiveMeasure(SymmetricPrimitiveEntitySimilarityMeasure measure){
 		this.m_primitiveMeasure = measure;
 	}
 	
 	public void setPrimitiveSimilarity(String entity1, String entity2, double sim){
-		if(m_primitiveMeasure instanceof PrimitiveEntitySimilarityMeasure){
+		if(m_primitiveMeasure instanceof DefaultEntitySimilarityMeasure){ // special case
+			LOG.warning("Ignoring explicit primitive similarities since the DEFAULT similarity measure is selected.");
+		}else{
 			if(getOntology() == null){
 				LOG.warning("Ignoring primitive measure specifications, should occur after ontology specification to enable verification of entities.");
 				return;
@@ -79,7 +76,7 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 			if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(entity1)))){
 				if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(entity2)))){
 					// both strings represent existing classes
-					((PrimitiveEntitySimilarityMeasure)m_primitiveMeasure).registerSimilarity(
+					(m_primitiveMeasure).registerSimilarity(
 							df.getOWLClass(IRI.create(entity1)),
 							df.getOWLClass(IRI.create(entity2)),
 							sim);
@@ -88,21 +85,12 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 			if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(entity1)))){
 				if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(entity2)))){
 					// both strings represent existing properties
-					((PrimitiveEntitySimilarityMeasure)m_primitiveMeasure).registerSimilarity(
+					(m_primitiveMeasure).registerSimilarity(
 							df.getOWLObjectProperty(IRI.create(entity1)),
 							df.getOWLObjectProperty(IRI.create(entity2)),
 							sim);
 				}
 			}
-		}else{
-			LOG.warning("Ignoring explicit primitive similarities since the DEFAULT similarity measure is selected.");
-		}
-	}
-	
-	public void setWeight(OWLEntity e, double weight){
-		if((e instanceof OWLClass || e instanceof OWLObjectProperty)){ // only accept weights for those
-//				&& weight <=1 && weight >= 0){ // only accept weight from [0,1]
-			m_weightingFunction.put(e, weight);
 		}
 	}
 	
@@ -113,15 +101,15 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 		}
 		OWLDataFactory df = getOntology().getOWLOntologyManager().getOWLDataFactory();
 		if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(strRep)))){
-			setWeight(df.getOWLClass(IRI.create(strRep)), weight);
+			m_weightingFunction.setWeight(df.getOWLClass(IRI.create(strRep)), weight);
 		}
 		if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(strRep)))){
-			setWeight(df.getOWLObjectProperty(IRI.create(strRep)), weight);
+			m_weightingFunction.setWeight(df.getOWLObjectProperty(IRI.create(strRep)), weight);
 		}
 	}
 	
 	public void setDefaultWeight(double weight){
-		this.m_defaultWeight = weight;
+		m_weightingFunction.setDefaultWeight(weight);
 	}
 	
 	/**
@@ -158,9 +146,10 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 	
 	@Override
 	public Double getWeight(OWLEntity e) {
-		if(m_weightingFunction.containsKey(e))
-			return m_weightingFunction.get(e);
-		return super.getWeight(e); // default weight
+		return m_weightingFunction.weight(e);
+//		if(m_weightingFunction.containsKey(e))
+//			return m_weightingFunction.get(e);
+//		return super.getWeight(e); // default weight
 	}
 	
 	@Override

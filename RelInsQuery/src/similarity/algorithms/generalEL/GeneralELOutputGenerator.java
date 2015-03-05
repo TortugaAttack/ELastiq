@@ -10,11 +10,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import main.StaticValues;
+
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 
 import similarity.algorithms.specifications.BasicInputSpecification;
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
+import statistics.StatStore;
+import tracker.TimeTracker;
 import util.EasyMath;
 
 /**
@@ -29,25 +33,18 @@ public class GeneralELOutputGenerator {
 	
 	private BasicInputSpecification m_specification;
 	
-	private static final Map<OutputType, String> DEFAULT_OUTPUT_FILES = new HashMap<OutputType, String>();
-	
 	public GeneralELOutputGenerator(GeneralELRelaxedInstancesAlgorithm algo, BasicInputSpecification spec){
 		m_algorithm = algo;
 		m_specification = spec;
-		
-		if(DEFAULT_OUTPUT_FILES.isEmpty()){
-			DEFAULT_OUTPUT_FILES.put(OutputType.ASCII, "value_development.txt");
-			DEFAULT_OUTPUT_FILES.put(OutputType.CSV, "value_development.csv");
-			DEFAULT_OUTPUT_FILES.put(OutputType.INSTANCES, "answers.txt");
-		}
 	}
 	
 	public void storeOutputs(File dir){
 		String path = dir.getAbsolutePath();
 		if(!path.endsWith("/")) path += "/";
 		for(OutputType t : m_specification.getParameters().getOutputs()){
+			if(m_algorithm == null && t.requiresAlgorithmResult()) continue; // enable output storage in the middle of the computation
 			
-			File f = new File(path + DEFAULT_OUTPUT_FILES.get(t));
+			File f = new File(path + StaticValues.getDefaultOutputFile(t));
 			try{
 				if(!f.exists()) f.createNewFile();
 				FileWriter fw = new FileWriter(f);
@@ -62,10 +59,12 @@ public class GeneralELOutputGenerator {
 	
 	public String renderOutput(OutputType type){
 		switch(type){
-		case ASCII     : return renderASCIITable();
-		case CSV       : return renderCSVTable();
-		case INSTANCES : return renderInstanceList();
-		default        : return "WARNING: output type not supported";
+		case ASCII      : return renderASCIITable();
+		case CSV        : return renderCSVTable();
+		case INSTANCES  : return renderInstanceList();
+		case STATISTICS : return StatStore.getInstance().getCSVString();
+		case TIMES      : return TimeTracker.getInstance().createEvaluation();
+		default         : return "WARNING: output type not supported";
 		}
 	}
 	
@@ -94,7 +93,7 @@ public class GeneralELOutputGenerator {
 	public String renderCSVTable(boolean ascending){
 		final String COL_SEP = "\t";
 		final String LINE_SEP = ";\n";
-		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment();
+		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(false);
 		StringBuilder sb = new StringBuilder();
 		// table head
 		sb.append("i");
@@ -121,7 +120,7 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderASCIITable(boolean ascending){
-		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment();
+		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(false);
 		if(simiDevelopment.keySet().size() == 0) return "";
 		StringBuilder sb = new StringBuilder();
 		int preLength = (simiDevelopment.keySet().size() + "").length();

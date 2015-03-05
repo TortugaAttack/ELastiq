@@ -7,17 +7,19 @@
 # relative path will be seen relative to the java runtime execution path
 # ontology block has to be specified before [query] [weights] and [measure] if PRIMITIVE is selected and explicit similarities are set
 [ontology]
-examples/ex03-paper01.ofn
+#examples/MOWL/mowlcorp/Film.owl.xml
+examples/MOWL/mowlcorp/notations/nnotations01.owl.xml
 
 # the query
 # currently only manchester owl class expression format supported
 [query]
-A AND s SOME (B AND C)
+#Arachnid and Broadcast and Cricketer and Town and (linksToWebsite some (CanadianFootballTeam))
+GO_0000466 and GO_0005980 and PomBase_SPAC6G9.09c and (during some GO_0090375) and (transcriptionally_regulates some (GO_0006801 and PomBase_SPAC824.03c and (protease_inhibitor_of some (GO_0046474 and PomBase_SPBC18H10.19 and PomBase_SPBP23A10.13 and (transcriptionally_regulates some (GO_0006467 and PomBase_SPBP35G2.07))))))
 
 # the successor discounting factor
 # gets his own block so it will not be forgotten
 [discount]
-0.5
+0.8
 
 # weights of entities, key-value pairs, overriding base weights of all entities (DEFAULT: 1, can be specified in [parameters])
 # this block is optional
@@ -37,7 +39,7 @@ DEFAULT
 
 # simply the threshold value for accepting relaxed instances
 [threshold]
-0.2
+0.01
 
 # a generic and optional list of key-value pairs altering the behaviour of the application
 [parameters]
@@ -49,13 +51,13 @@ normalizing:2
 baseWeight:1
 # either give iterations or precision, if both found, first one is respected, if none found, default behaviour
 # fixed number of iterations of main procedure (NOT DEFAULT METHOD)
-# iterations:50
+# iterations:500
 # OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
-precision:0.0001
+precision:0.01
 # specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
-log:FINE
+log:INFO
 # give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
 output:./out_example/
 
@@ -67,3 +69,7 @@ ASCII
 CSV
 # a list of the actual individuals that are relaxed instances of the query including their similarity
 INSTANCES
+# a simple table of computational statistics with min, max and mean values
+STATISTICS
+# have the time tracking results be stored in a seperate file in addition to the LOG
+TIMES

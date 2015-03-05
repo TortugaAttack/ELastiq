@@ -22,6 +22,7 @@ import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
 import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
+import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;
 
 public class WeightedInputSpecificationParser {
 
@@ -107,9 +108,10 @@ public class WeightedInputSpecificationParser {
 		}
 		
 	}
-	
+
 	private String readBlock(BufferedReader br, Block block) throws IOException{
 		String line = br.readLine();
+		String queryString = "";
 		int cnt = 0; // counts the valid content lines
 		while(line != null && !isBlockId(line)){
 			if(!line.startsWith(COMMENT_PREFIX)){
@@ -118,8 +120,8 @@ public class WeightedInputSpecificationParser {
 					cnt++;
 					switch(block){
 					case QUERY : 
-						m_result.setQuery(line);
-						return br.readLine();
+						queryString += line;
+						break;
 					case ONTOLOGY : 
 						m_result.setOntologyFile(line);
 						return br.readLine();
@@ -132,7 +134,7 @@ public class WeightedInputSpecificationParser {
 					case MEASURE :
 						if(cnt == 1){ // expect measure specifier
 							if(line.equals("PRIMITIVE")){
-								m_result.setPrimitiveMeasure(new PrimitiveEntitySimilarityMeasure());
+								m_result.setPrimitiveMeasure(new SymmetricPrimitiveEntitySimilarityMeasure());
 								break;
 							}else if(line.equals("DEFAULT")){
 								m_result.setPrimitiveMeasure(new DefaultEntitySimilarityMeasure());
@@ -179,6 +181,7 @@ public class WeightedInputSpecificationParser {
 			
 		}
 		
+		if(queryString != "") m_result.setQuery(queryString);
 		return line;
 	}
 	
@@ -201,9 +204,7 @@ public class WeightedInputSpecificationParser {
 				}
 			}else if(key.equals(PAR_BASE_WEIGHT)){
 				double baseWeight = Double.parseDouble(value);
-				if(baseWeight > 0){
-					m_result.setDefaultWeight(baseWeight);
-				}
+				m_result.setDefaultWeight(baseWeight);
 			}else if(key.equals(PAR_ITERATIONS) && !terminationMethodAlreadySet){
 				m_result.setTerminationMethod(TerminationMethod.ABSOLUTE, Integer.parseInt(value));
 				terminationMethodAlreadySet = true;
@@ -216,6 +217,7 @@ public class WeightedInputSpecificationParser {
 				parameters.enterValue(GeneralParameters.LOG_LEVEL, Level.parse(value));
 			}else if(key.equals(PAR_OUT_DIR)){
 				File out = new File(value);
+				if(!out.exists()) out.mkdirs();
 				if(out.isDirectory()){
 					parameters.enterValue(GeneralParameters.OUT_DIR, out);
 				}

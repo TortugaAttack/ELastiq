@@ -1,10 +1,13 @@
 package interpretation.generator;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import interpretation.ds.CanonicalDomain;
 import interpretation.ds.DomainNode;
@@ -12,6 +15,7 @@ import interpretation.ds.IDomain;
 import interpretation.ds.CanonicalInterpretation;
 
 import main.Main;
+import main.StaticValues;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
@@ -37,33 +41,52 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import owl.IOWLOntologyExtension;
 import owl.OntologyOperator;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
+import statistics.StatStore;
+import tracker.BlockOutputMode;
+import tracker.TimeTracker;
 
 public class CanonicalInterpretationGenerator implements IInterpretationGenerator {
 
-	private OWLClassExpression m_referenceExpression;
-	private OWLClass m_referenceClass;
+	private static final String LOCAL_LOGGER_NAME = "CanonicalModel-Logger";
+	private static final TimeTracker TRACKER = TimeTracker.getInstance();
+	private static final StatStore STAT = StatStore.getInstance();
 	
-	private OntologyOperator m_ontologyOperator;
+	OWLClassExpression m_referenceExpression;
+	OWLClass m_referenceClass;
+	
+	OntologyOperator m_ontologyOperator;
 	
 	private Map<OWLClass, OWLNamedIndividual> m_classAssociations;
 	
-	private CanonicalDomain m_domain;
+	CanonicalDomain m_domain;
 	
-	private boolean m_keepSmall;
+	boolean m_keepSmall;
 	
-	private boolean m_normalize;
+	boolean m_normalize;
+	
+	Logger LOG;
 	
 	public CanonicalInterpretationGenerator() {
-		this(null);
+		this(true);
 	}
 	
-	public CanonicalInterpretationGenerator(OWLClassExpression expr) {
+	public CanonicalInterpretationGenerator(OWLClassExpression expr){
+		this(expr, true);
+	}
+	
+	public CanonicalInterpretationGenerator(boolean normalizing){
+		this(null, normalizing);
+	}
+	
+	public CanonicalInterpretationGenerator(OWLClassExpression expr, boolean normalizing) {
 		this.m_referenceExpression = expr;
 		this.m_classAssociations = new HashMap<OWLClass, OWLNamedIndividual>();
 		
 		m_keepSmall = true;
 		
-		m_normalize = true;
+		m_normalize = normalizing;
+		
+		LOG = Logger.getLogger(LOCAL_LOGGER_NAME);
 	}
 	
 	@Override
@@ -92,8 +115,11 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		
 		// the element generator creates all necessary domain elements and adds their instantiators
 		elemGen.generate(this, m_keepSmall);
+		LOG.info("a total of " + m_classAssociations.size() + " classes are mapped to individuals");
 		
+		TRACKER.start(StaticValues.TIME_DOMAIN_SUCCESSORS);
 		if(!isKBMode()){ // TBox + Query mode
+			
 			// add all successor relations by iterating all known existential restrictions
 			for(OWLObjectSomeValuesFrom some : exRestStore.getRestrictions()){
 				addEntailedTBoxSuccessors(some, m_normalize);
@@ -102,6 +128,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 			// add all ABox property assertion successors
 			for(OWLAxiom ax : m_ontologyOperator.getOntology().getABoxAxioms(true)){
 				if(ax instanceof OWLObjectPropertyAssertionAxiom){
+//					LOG.fine("Adding role assertion successor: " + ax);
 					OWLObjectPropertyAssertionAxiom pAx = (OWLObjectPropertyAssertionAxiom)ax;
 					getDomainElement(pAx.getSubject()).addSuccessor(
 							(OWLObjectProperty)pAx.getProperty(),
@@ -110,22 +137,84 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 			}
 			
 			// add all successor relations by iterating all known existential restrictions
+			int exR = 1;
 			for(OWLObjectSomeValuesFrom some : m_ontologyOperator.getExistentialRestrictionStore().getRestrictions()){
+				if(exR % 1000 == 0){
+					System.out.println(exR + " restrictions handled");
+				}
 				addEntailedKBSuccessors(some);
+				exR++;
 			}
+			
+			LOG.info("TOTAL TIME FOR INSTANCE RETRIEVAL: " + sum + " ms");
+			
 			// normalize later
 			// if(m_normalize){ startSimulationComputation(); }
 			
 		}
+		TRACKER.stop(StaticValues.TIME_DOMAIN_SUCCESSORS);
+		
+		
+		/* ************* TEST SPECIFIC STUFF ************** */
+//		LOG.info("Start checking for useless domain nodes ...");
+//		Map<OWLClassExpression, DomainNode<OWLClassExpression>> conceptDomainNodes = canonInterpretation.getDomain().getConceptElements();
+//		Set<DomainNode<OWLClassExpression>> noPredecessors = new HashSet<DomainNode<OWLClassExpression>>();
+//		noPredecessors.addAll(conceptDomainNodes.values());
+//		for(OWLClassExpression ce : conceptDomainNodes.keySet()){
+//			for(OWLObjectProperty r : conceptDomainNodes.get(ce).getSuccessorRoles()){
+//				noPredecessors.removeAll(conceptDomainNodes.get(ce).getSuccessors(r));
+//			}
+//			
+//			NodeSet<OWLClass> subClasses = m_ontologyOperator.getReasoner().getSubClasses(ce.asOWLClass(), false);
+//			Node<OWLClass> eqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(ce.asOWLClass());
+//			for(OWLClassExpression ce2 : conceptDomainNodes.keySet()){
+//				if(!ce.equals(ce2)){
+//					if(subClasses.containsEntity(ce2.asOWLClass())){
+//						LOG.info("Domain node " + conceptDomainNodes.get(ce2) + " represents something more specific than " + conceptDomainNodes.get(ce));
+//					}else if(eqClasses.contains(ce2.asOWLClass())){
+//						LOG.info("Domain node " + conceptDomainNodes.get(ce2) + " is equivalent to " + conceptDomainNodes.get(ce));
+//					}
+//				}
+//			}
+//		}
+//		for(DomainNode<OWLClassExpression> d : noPredecessors){
+//			LOG.info(d + " does not have any predecessors.");
+//			if(d.getSuccessorObjects().isEmpty())
+//				LOG.info(d + " is not connected to the model at all!");
+//		}
+		/* ************ END TEST ***************** */
 		
 		return canonInterpretation;
 	}
 	
+	protected NodeSet<OWLClass> currentIdSubClasses;
+	protected NodeSet<OWLClass> currentIdSuperClasses;
+	protected Node<OWLClass> currentIdEqClasses;
 	private void addEntailedTBoxSuccessors(OWLObjectSomeValuesFrom some, boolean doNormalizing){
+//		StatStore.getInstance().enterValue("lookup " + some.getFiller(), 1.0);
+//		StatStore.getInstance().enterValue("restrictions handled", 1.0);
+		TRACKER.start(StaticValues.TIME_TBOX_SUCCESSORS, BlockOutputMode.COMPLETE, true);
+//		TRACKER.start("fetch domain element and intermediary", BlockOutputMode.COMPLETE, true);
+		DomainNode<?> toNode = getDomainElement(some.getFiller());
 		// the super class, intermediary stands for (some r B)
 		OWLClass superClass = m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(some);
+//		TRACKER.stop("fetch domain element and intermediary");
 		// add successors from all
+//		TRACKER.start("query elk", BlockOutputMode.COMPLETE, true);
+//		StatStore.getInstance().enterValue("subclass accessing", 1.0);
 		NodeSet<OWLClass> classes = m_ontologyOperator.getReasoner().getSubClasses(superClass, false);
+		
+		// fill current class relations from Id
+//		StatStore.getInstance().enterValue("subclass accessing", 1.0);
+		currentIdSubClasses = m_ontologyOperator.getReasoner().getSubClasses(some.getFiller(), false);
+//		StatStore.getInstance().enterValue("superclass accessing", 1.0);
+		currentIdSuperClasses = m_ontologyOperator.getReasoner().getSuperClasses(some.getFiller(), false);
+//		StatStore.getInstance().enterValue("equivalent classes accessing", 1.0);
+		currentIdEqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(some.getFiller());
+		
+		
+//		TRACKER.stop("query elk");
+//		LOG.fine(" creating successors to " + some + ": " + classes.toString());
 		Iterator<Node<OWLClass>> nodeIt = classes.iterator();
 		while(nodeIt.hasNext()){
 			Iterator<OWLClass> it = nodeIt.next().iterator();
@@ -136,41 +225,59 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 				if(node != null){
 					if(doNormalizing){
 //						if(!isSuccessorRepresented(node, (OWLObjectProperty)some.getProperty(), some.getFiller())){
-						if(!isSuccessorRepresented(node, getDomainElement(some.getFiller()), (OWLObjectProperty)some.getProperty())){
+						TRACKER.start("normalizing and adding", BlockOutputMode.COMPLETE, true);
+						if(!isSuccessorRepresented(node, toNode, (OWLObjectProperty)some.getProperty())){
 							removeIncludedSuccessors((OWLObjectProperty)some.getProperty(), node, some.getFiller());
 							
-							node.addSuccessor((OWLObjectProperty)some.getProperty(), getDomainElement(some.getFiller()));
+							node.addSuccessor((OWLObjectProperty)some.getProperty(), toNode);
 						}
+						TRACKER.stop("normalizing and adding");
 					}else{
-						node.addSuccessor((OWLObjectProperty)some.getProperty(), getDomainElement(some.getFiller()));
+						node.addSuccessor((OWLObjectProperty)some.getProperty(), toNode);
 					}
 				}
 			}
 		}
 		// add all equivalent class successors
+//		TRACKER.start("query elk", BlockOutputMode.COMPLETE, true);
 		Iterator<OWLClass> cIt = m_ontologyOperator.getReasoner().getEquivalentClasses(superClass).iterator();
+//		TRACKER.stop("query elk");
 		while(cIt.hasNext()){
 			DomainNode<?> node = m_domain.getDomainNode(cIt.next());
 			if(node != null){
 				if(doNormalizing){
 //					if(!isSuccessorRepresented(node, (OWLObjectProperty)some.getProperty(), some.getFiller())){
-					if(!isSuccessorRepresented(node, getDomainElement(some.getFiller()), (OWLObjectProperty)some.getProperty())){
+					TRACKER.start("normalizing and adding", BlockOutputMode.COMPLETE, true);
+					if(!isSuccessorRepresented(node, toNode, (OWLObjectProperty)some.getProperty())){
 						removeIncludedSuccessors((OWLObjectProperty)some.getProperty(), node, some.getFiller());
 						
-						node.addSuccessor((OWLObjectProperty)some.getProperty(), getDomainElement(some.getFiller()));
+						node.addSuccessor((OWLObjectProperty)some.getProperty(), toNode);
 					}
+					TRACKER.stop("normalizing and adding");
 				}else{
-					node.addSuccessor((OWLObjectProperty)some.getProperty(), getDomainElement(some.getFiller()));
+					node.addSuccessor((OWLObjectProperty)some.getProperty(), toNode);
 				}
 			}
 		}
+		TRACKER.stop(StaticValues.TIME_TBOX_SUCCESSORS);
 	}
 	
+	private long sum = 0;
 	private void addEntailedKBSuccessors(OWLObjectSomeValuesFrom some){
+		TRACKER.start(StaticValues.TIME_KB_SUCCESSORS, BlockOutputMode.COMPLETE, true);
 		// add all role-successors entailed by the TBox
-		addEntailedTBoxSuccessors(some, true); // for KB mode only normalize TBox contained roles
+		addEntailedTBoxSuccessors(some, m_normalize); // for KB mode only normalize TBox contained roles
 		
-		NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner().getInstances(getClassRepresentation(some), false);
+		DomainNode<?> toNode = getDomainElement(some.getFiller());
+		
+		OWLClass someClass = m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(some);
+		
+		long start = System.currentTimeMillis();
+//		StatStore.getInstance().enterValue("instance accessing", 1.0);
+		NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner().getInstances(someClass, false);
+		sum += System.currentTimeMillis() - start;
+//		NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner().getInstances(getClassRepresentation(some), false);
+//		LOG.fine(" creating successors to " + some + " from instances: " + instances.toString());
 		Iterator<Node<OWLNamedIndividual>> it1 = instances.iterator();
 		while(it1.hasNext()){
 			Iterator<OWLNamedIndividual> it2 = it1.next().iterator();
@@ -178,20 +285,27 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 				DomainNode<?> from = m_domain.getDomainNode(it2.next());
 				if(from != null){
 //					if(!isSuccessorRepresented(from, getDomainElement(some.getFiller()), (OWLObjectProperty)some.getProperty())){
-						from.addSuccessor((OWLObjectProperty)some.getProperty(), getDomainElement(some.getFiller()));
+						from.addSuccessor((OWLObjectProperty)some.getProperty(), toNode);
 //					}
 				}
 			}
 		}
+		TRACKER.stop(StaticValues.TIME_KB_SUCCESSORS);
 	}
 	
-	private boolean isSuccessorRepresented(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property){
+	protected boolean isSuccessorRepresented(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property){
 		if(from.getId() instanceof OWLClassExpression && to.getId() instanceof OWLClassExpression){
 			Set<DomainNode<?>> successors = from.getSuccessors(property);
+//			StatStore.getInstance().enterValue("subclass accessing", 1.0);
+//			NodeSet<OWLClass> subClasses = m_ontologyOperator.getReasoner().getSubClasses((OWLClass)to.getId(), false);
+			NodeSet<OWLClass> subClasses = currentIdSubClasses;
+			Node<OWLClass> eqClasses = currentIdEqClasses;
 			for(DomainNode<?> succ : successors){
 				// only compare successors to other class domain elements
-				if(succ.getId() instanceof OWLClassExpression){
-					if(succ.getInstantiators().containsAll(to.getInstantiators())){ // could be done with reasoner
+				if(succ.getId() instanceof OWLClass){
+//					if(succ.getInstantiators().containsAll(to.getInstantiators())){ // could be done with reasoner
+					if(subClasses.containsEntity((OWLClass)succ.getId())
+							|| eqClasses.contains((OWLClass)succ.getId())){ // if there exists a successors more (or equally) specific than the new one
 						return true;
 					}
 				}
@@ -218,27 +332,35 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		return false;
 	}*/
 	
-	private void removeIncludedSuccessors(OWLObjectProperty r, DomainNode<?> d, OWLClassExpression newSucc){
-		Set<DomainNode<?>> successors = d.getSuccessors(r);
+	protected Set<DomainNode<OWLClassExpression>> removeIncludedSuccessors(OWLObjectProperty property, DomainNode<?> d, OWLClassExpression newSucc){
+		Set<DomainNode<OWLClassExpression>> removed = new HashSet<DomainNode<OWLClassExpression>>();
+		Set<DomainNode<?>> successors = d.getSuccessors(property);
+//		StatStore.getInstance().enterValue("superclass accessing", 1.0);
+//		NodeSet<OWLClass> superClasses = m_ontologyOperator.getReasoner().getSuperClasses(newSucc, false);
+//		Node<OWLClass> eqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(newSucc);
+		NodeSet<OWLClass> superClasses = currentIdSuperClasses;
 		if(successors != null){
-			Set<DomainNode<?>> mark_removed = new HashSet<DomainNode<?>>();
-			for(DomainNode<?> succ : successors){
+//			Set<DomainNode<?>> mark_removed = new HashSet<DomainNode<?>>();
+			Iterator<DomainNode<?>> it = successors.iterator();
+//			for(DomainNode<?> succ : successors){
+			while(it.hasNext()){
+				DomainNode<?> succ = it.next();
 				if(succ.getId() instanceof OWLClassExpression){ // only inspect class to class relations
+					OWLClass succClass = getClassRepresentation((OWLClassExpression)succ.getId());
 					// if newSucc is more specific than succ, remove succ
-					if(m_ontologyOperator.getReasoner().getSuperClasses(newSucc, false)
-							.containsEntity(getClassRepresentation((OWLClassExpression)succ.getId()))
-						|| m_ontologyOperator.getReasoner().getEquivalentClasses(newSucc)
-							.contains(getClassRepresentation((OWLClassExpression)succ.getId()))
-							){
-						mark_removed.add(succ);
+					if(superClasses.containsEntity(succClass)){
+						it.remove();
+						removed.add(m_domain.getDomainNode((OWLClassExpression)succ.getId()));
+//						mark_removed.add(succ);
 					}
 				}// else what about individual domain elements
 			}
-			successors.removeAll(mark_removed);
+//			successors.removeAll(mark_removed);
 		}
+		return removed;
 	}
 	
-	private OWLClass getFreshQueryClass(String base){
+	protected OWLClass getFreshQueryClass(String base){
 		long cnt = 0;
 		String iriString = base;
 		while(m_ontologyOperator.getOntology().containsClassInSignature(IRI.create(iriString))){
@@ -247,9 +369,20 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		return OWLManager.getOWLDataFactory().getOWLClass(IRI.create(iriString));
 	}
 	
-	private void insertQueryAxiom(OWLClass queryClass){
+	protected void insertQueryAxiom(OWLClass queryClass){
+//		Main.getOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
+//				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(queryClass, m_referenceExpression));
 		Main.getOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
-				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(queryClass, m_referenceExpression));
+//				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(
+				OWLManager.getOWLDataFactory().getOWLSubClassOfAxiom(
+					queryClass,
+					m_referenceExpression.accept(
+							m_ontologyOperator.getExistentialRestrictionStore().getVisitor()
+					)
+		));
+		m_ontologyOperator.getOntology().getOWLOntologyManager()
+		.applyChanges(m_ontologyOperator.getExistentialRestrictionStore().getVisitor().getChanges());
+		m_ontologyOperator.getExistentialRestrictionStore().getVisitor().resetChangeList();
 		m_ontologyOperator.ontologyChanged();
 	}
 	
@@ -267,6 +400,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		Object searchFor = o;
 		if(o instanceof OWLClassExpression){
 			OWLClass c = getClassRepresentation((OWLClassExpression)o);
+			STAT.enterValue(StaticValues.STAT_ASSOCIATION_CONTAINS_CHECKS, 1.0);
 			searchFor = m_classAssociations.get(c);
 			if(searchFor == null) searchFor = o;
 		}
@@ -318,5 +452,23 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	 */
 	public void setNormalizingFlag(boolean normalize){
 		this.m_normalize = normalize;
+	}
+	
+	/**
+	 * Initialize your own logger for the generator.
+	 * If not actively specified, default logger will be used.
+	 * Call with null to disable logging for the generator. 
+	 * @param log
+	 */
+	public void setLogger(Logger log){
+		if(log == null){
+			this.LOG.setLevel(Level.OFF);
+		}else{
+			this.LOG = log;
+		}
+	}
+	
+	public Logger getLogger() {
+		return LOG;
 	}
 }

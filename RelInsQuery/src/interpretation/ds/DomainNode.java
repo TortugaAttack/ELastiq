@@ -50,6 +50,14 @@ public class DomainNode<T> {
 		return m_instantiators.add(A);
 	}
 	
+	public void removeInstantiator(OWLClass A){
+		m_instantiators.remove(A);
+	}
+	
+	public void removeInstantiators(Set<OWLClass> As){
+		m_instantiators.removeAll(As);
+	}
+	
 	public boolean addSuccessor(OWLObjectProperty r, DomainNode<?> d){
 		if(!m_successors.containsKey(r)){
 			m_successors.put(r, new HashSet<DomainNode<?>>());

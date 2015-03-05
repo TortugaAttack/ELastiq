@@ -18,8 +18,9 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import owl.io.OWLOntologyLoader;
 import owl.io.OWLQueryParser;
 
+import similarity.EntityWeightingFunction;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
-import similarity.measures.entities.IEntitySimilarityMeasure;
+import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;
 
 public class BasicInputSpecification implements IInputSpecification {
 
@@ -31,16 +32,16 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	private double m_threshold;
 	
-	protected double m_defaultWeight;
+	protected EntityWeightingFunction m_weightingFunction;
 
-	protected IEntitySimilarityMeasure m_primitiveMeasure;
+	protected SymmetricPrimitiveEntitySimilarityMeasure m_primitiveMeasure;
 	
 	private GeneralParameters m_parameters;
 	
 	public BasicInputSpecification() {
 		m_primitiveMeasure = new DefaultEntitySimilarityMeasure();
 		
-		m_defaultWeight = 1.0;
+		m_weightingFunction = new EntityWeightingFunction();
 		
 		m_threshold = 1.0;
 		
@@ -110,7 +111,7 @@ public class BasicInputSpecification implements IInputSpecification {
 	}
 	
 	/* ********* getters ******** */
-	public IEntitySimilarityMeasure getPrimitiveMeasure(){
+	public SymmetricPrimitiveEntitySimilarityMeasure getPrimitiveMeasure(){
 		return m_primitiveMeasure;
 	}
 	
@@ -132,7 +133,7 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	// default getters
 	public Double getWeight(OWLEntity e){
-		return m_defaultWeight;
+		return m_weightingFunction.weight(e); // should always be the default weight
 	}
 	
 	public Double getDiscountingFactor(){

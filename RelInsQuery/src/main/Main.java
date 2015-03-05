@@ -1,7 +1,10 @@
 package main;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.FileHandler;
@@ -11,11 +14,19 @@ import java.util.logging.Logger;
 import main.log.BasicLogFormatter;
 import main.log.CustomConsoleHandler;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.PatternLayout;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
+import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.profiles.OWLProfileReport;
 import org.semanticweb.owlapi.profiles.OWLProfileViolation;
+
+import owl.io.OWLOntologyLoader;
+import owl.transform.el.OWLToELTransformer;
 
 import similarity.algorithms.generalEL.GeneralELOutputGenerator;
 import similarity.algorithms.generalEL.GeneralELRelaxedInstancesAlgorithm;
@@ -24,23 +35,73 @@ import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.IInputSpecification;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.algorithms.specifications.parser.WeightedInputSpecificationParser;
+import tracker.BlockOutputMode;
+import tracker.TimeTracker;
+import util.EasyTimes;
 
-public class Main {
+public class Main {	
 	
 	private static OWLOntologyManager MANAGER;
 	
 	private static BasicInputSpecification INPUT;
+	
+	private static TimeTracker TRACKER = TimeTracker.getInstance();
 
 	public static void main(String[] args) {
+		
+		/* *** TESTING STUFF **** */
+//		if(args.length < 1){
+//			System.err.println("No ontology file given.");
+//			System.exit(1);
+//		}
+//		
+//		File dir = new File(args[0]);
+//		System.out.println("Searching " + dir.getPath());
+//		
+//		for(File f : dir.listFiles(new FilenameFilter() {
+//			@Override
+//			public boolean accept(File dir, String name) {
+//				return name.endsWith(".owl");
+//			}
+//		})){
+//			System.out.println("Handling " + f.getName());
+//
+//			OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+//			OWLOntologyLoader l = new OWLOntologyLoader(man);
+//			OWLOntology o = l.load(f);
+//			if(o != null){
+//			OWLToELTransformer t = new OWLToELTransformer();
+//			t.transform(o);
+//			
+//			File out = new File(dir.getPath() + "/" + f.getName());
+//			System.out.println("Saving to " + out.getPath());
+//			l.save(out, o, new OWLFunctionalSyntaxOntologyFormat());
+//			
+//			man.removeOntology(o);
+//			}
+//		}	
+//		System.exit(1);
+		/* *** TEST DONE **** */
+		Thread hook = new Thread(){
+			@Override
+			public void run() {
+				TimeTracker.getInstance().stopAll();
+				Logger.getLogger(StaticValues.LOGGER_NAME).info(TimeTracker.getInstance().createEvaluation());
+				GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
+				gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+			}			
+		};
+		Runtime.getRuntime().addShutdownHook(hook); // in case the computation is interrupted prematurely
+		
+		TRACKER.setDisplayDepth(10);
+		TRACKER.start(StaticValues.TIME_TOTAL, BlockOutputMode.IN_TREE);
 		if(args.length < 1){
 			System.err.println("No specification file given.");
 			System.exit(1);
 		}
 		Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 		
-		// usually read parameter to obtain input specification file
-//		WeightedInputSpecification in = new WeightedInputSpecification();
-//		INPUT = in;
+		TRACKER.start(StaticValues.TIME_INPUT_PARSING, BlockOutputMode.IN_TREE);
 		WeightedInputSpecificationParser parser = new WeightedInputSpecificationParser(new File(args[0]));
 		INPUT = new WeightedInputSpecification();
 		try{
@@ -49,11 +110,19 @@ public class Main {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		TRACKER.stop(StaticValues.TIME_INPUT_PARSING);
+		
+		TRACKER.start(StaticValues.TIME_PREPROCESSING, BlockOutputMode.IN_TREE);
+//		OWLOntologyLoader loader = new OWLOntologyLoader(INPUT.getOntology().getOWLOntologyManager());
+//		loader.save(new File("examples/snomed2010a_alt.ofn"), INPUT.getOntology(), new OWLFunctionalSyntaxOntologyFormat());
+//		System.exit(1);
+		
 		// setup logging (after spec-parsing, log-level may depend on specification
 		String logFile = ((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR)).getAbsolutePath();
 		if(!logFile.endsWith("/")) logFile += "/";
 		setupLogging(logFile + StaticValues.LOGGER_FILE, (Level)INPUT.getParameters().getValue(GeneralParameters.LOG_LEVEL));	
 		
+		TRACKER.start(StaticValues.TIME_PROFILE_CHECK);
 		// validate OWL Profile (The type of profile is fixed in StaticValues
 		OWLProfileReport report = StaticValues.REQUIRED_PROFILE.checkOntology(INPUT.getOntology());
 		if(!report.isInProfile()){
@@ -75,7 +144,7 @@ public class Main {
 			if(fatal)
 				System.exit(1);
 		}
-		
+		TRACKER.stop(StaticValues.TIME_PROFILE_CHECK);
 		// create the algorithm (if additional algorithm e.g. for unfoldable TBoxes exists, have a process here
 		// to decide the type of algorithm depending on the ontology structure)
 		GeneralELRelaxedInstancesAlgorithm algo = new GeneralELRelaxedInstancesAlgorithm();
@@ -90,15 +159,22 @@ public class Main {
 		}
 		LOG.info(resultMsg);
 		
+		// the following 3 lines would be executed from the shutdown hook anyway, could omit removing hook
+		// only difference is that the completed algorithm is present in the output generator
+		TRACKER.stopAll();
+		LOG.info("Time tracking results:\n" + TRACKER.createEvaluation());
+		
 		outGenerator.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+		
+		Runtime.getRuntime().removeShutdownHook(hook);
 	}
 	
 	private static void setupLogging(String logFile, Level level){
-		Logger.getLogger("org.semanticweb.elk").setLevel(level);
 		Logger log = Logger.getLogger(StaticValues.LOGGER_NAME);
 		
 		log.setLevel(level);
 		log.setUseParentHandlers(false);
+		
 //		ConsoleHandler consoleLogHandler = new ConsoleHandler();
 //		consoleLogHandler.setFormatter(new BasicLogFormatter(true));
 		CustomConsoleHandler consoleLogHandler = new CustomConsoleHandler();
@@ -112,6 +188,32 @@ public class Main {
 		}catch(IOException ioe){
 			System.err.println(ioe.getMessage());
 		}
+		
+		// take care of the **** elk log4j logger
+		org.apache.log4j.Logger elkLogger = org.apache.log4j.Logger.getRootLogger();
+		elkLogger.removeAllAppenders();
+		
+		elkLogger.setLevel(org.apache.log4j.Level.toLevel(level.toString()));
+
+		// somehow the file appender removes contents from file in the end
+		FileAppender fa = new FileAppender();
+		fa.setLayout(new PatternLayout("%-5r [%t] %-5p %c %x - %m%n"));
+		if(logFile.contains("/")){
+			fa.setFile(logFile.substring(0, logFile.lastIndexOf("/")+1) + StaticValues.ELK_LOG_FILE);
+		}else{
+			fa.setFile(StaticValues.ELK_LOG_FILE);
+		}
+		fa.setAppend(true);
+		fa.setThreshold(org.apache.log4j.Level.toLevel(level.toString()));
+		fa.activateOptions();
+		
+		ConsoleAppender ca = new ConsoleAppender();
+		ca.setLayout(new PatternLayout("%-5r [%t] %-5p %c %x - %m%n"));
+		ca.setThreshold(org.apache.log4j.Level.toLevel(level.toString()));
+		ca.activateOptions();
+		
+		elkLogger.addAppender(fa);
+		elkLogger.addAppender(ca);
 	}
 	
 	public static OWLOntologyManager getOntologyManager(){

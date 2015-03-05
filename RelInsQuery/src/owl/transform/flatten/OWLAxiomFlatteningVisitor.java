@@ -13,7 +13,6 @@ import main.StaticValues;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.AddAxiom;
-import org.semanticweb.owlapi.model.ClassExpressionType;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLAxiomChange;
@@ -50,6 +49,8 @@ public class OWLAxiomFlatteningVisitor extends OWLObjectVisitorExAdapter<OWLClas
 	private OWLOntology m_ontology;
 	private OWLOntologyManager m_manager;
 	
+	private String m_namespace;
+	
 	/**
 	 * Keeping track of the already newly introduced subclass axioms in order to avoid
 	 * creating a new intermediary axiom twice.
@@ -62,6 +63,10 @@ public class OWLAxiomFlatteningVisitor extends OWLObjectVisitorExAdapter<OWLClas
 	private HashMap<OWLObjectIntersectionOf, OWLClass> m_introducedConjunctionDefinitions;
 	
 	public OWLAxiomFlatteningVisitor() {
+		this("");
+	}
+	
+	public OWLAxiomFlatteningVisitor(String namespace) {
 		m_intermediaryRestrictionIndex = 0;
 		m_intermediaryConjunctionIndex = 0;
 		
@@ -76,32 +81,39 @@ public class OWLAxiomFlatteningVisitor extends OWLObjectVisitorExAdapter<OWLClas
 		
 		m_introducedConjunctionDefinitions = new HashMap<OWLObjectIntersectionOf, OWLClass>();
 		m_introducedRestrictionDefinitions = new HashMap<OWLObjectSomeValuesFrom, OWLClass>();
+		
+		m_namespace = namespace;
 	}
 	
 	public IRI getNextIntermediary(boolean isConjunction){
 		IRI nextIntermediary;
-		do{
+//		do{ // looping not necessary due to unique namespace
 			if(isConjunction){
 				nextIntermediary = IRI.create(/*m_ontology.getOntologyID()
 						+ "#"
-						+*/ m_intermediaryConjunctionTemplate.replace("#", ""+(m_intermediaryConjunctionIndex)));
+						+*/
+						m_namespace +
+						m_intermediaryConjunctionTemplate.replace("#", ""+(m_intermediaryConjunctionIndex)));
 				m_intermediaryConjunctionIndex++;
 			}else{
 				nextIntermediary = IRI.create(/*m_ontology.getOntologyID()
 						+ "#"
-						+*/ m_intermediaryRestrictionTemplate.replace("#", ""+(m_intermediaryRestrictionIndex)));
+						+*/ 
+						m_namespace +
+						m_intermediaryRestrictionTemplate.replace("#", ""+(m_intermediaryRestrictionIndex)));
 				m_intermediaryRestrictionIndex++;
 			}
 		// do as long as the created intermediary is already contained, in order to get a completely fresh intermediary
-		}while(m_ontology.containsClassInSignature(nextIntermediary));
+//		}while(m_ontology.containsClassInSignature(nextIntermediary));
 		
 		return nextIntermediary;
 	}
 	
 	private boolean isIntermediary(OWLClass c){
 		IRI iri = c.getIRI();
-		return iri.toString().contains(m_intermediaryRestrictionTemplate.replace("#", "")) ||
-				iri.toString().contains(m_intermediaryConjunctionTemplate.replace("#", ""));
+		return m_namespace.equals(iri.getNamespace());
+//		return iri.toString().contains(m_intermediaryRestrictionTemplate.replace("#", "")) ||
+//				iri.toString().contains(m_intermediaryConjunctionTemplate.replace("#", ""));
 	}
 	
 	
