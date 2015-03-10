@@ -15,6 +15,7 @@ import main.StaticValues;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLEntity;
 
+import similarity.algorithms.generalEL.GeneralELRelaxedInstancesAlgorithm;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 
 public class SetMath {

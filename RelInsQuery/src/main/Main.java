@@ -19,6 +19,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.PatternLayout;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -35,6 +36,7 @@ import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.IInputSpecification;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.algorithms.specifications.parser.WeightedInputSpecificationParser;
+import statistics.StatStore;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 import util.EasyTimes;
@@ -47,6 +49,13 @@ public class Main {
 	
 	private static TimeTracker TRACKER = TimeTracker.getInstance();
 
+	private static final void finish(){
+		TimeTracker.getInstance().stopAll();
+		Logger.getLogger(StaticValues.LOGGER_NAME).info(TimeTracker.getInstance().createEvaluation());
+		GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
+		gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+	}
+	
 	public static void main(String[] args) {
 		
 		/* *** TESTING STUFF **** */
@@ -85,10 +94,7 @@ public class Main {
 		Thread hook = new Thread(){
 			@Override
 			public void run() {
-				TimeTracker.getInstance().stopAll();
-				Logger.getLogger(StaticValues.LOGGER_NAME).info(TimeTracker.getInstance().createEvaluation());
-				GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
-				gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+				finish();
 			}			
 		};
 		Runtime.getRuntime().addShutdownHook(hook); // in case the computation is interrupted prematurely
@@ -110,9 +116,17 @@ public class Main {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		if(INPUT.getQueries().isEmpty()){
+			LOG.severe("None of the given queries where parsable.");
+			finish();
+			System.exit(1);
+		}
 		TRACKER.stop(StaticValues.TIME_INPUT_PARSING);
 		
 		TRACKER.start(StaticValues.TIME_PREPROCESSING, BlockOutputMode.IN_TREE);
+		StatStore.getInstance().enterValue("TBox Axioms", INPUT.getOntology().getTBoxAxioms(true).size() * 1.0);
+		StatStore.getInstance().enterValue("ABox Axioms", INPUT.getOntology().getABoxAxioms(true).size() * 1.0);
+		StatStore.getInstance().enterValue("Individuals", INPUT.getOntology().getIndividualsInSignature(true).size() * 1.0);
 //		OWLOntologyLoader loader = new OWLOntologyLoader(INPUT.getOntology().getOWLOntologyManager());
 //		loader.save(new File("examples/snomed2010a_alt.ofn"), INPUT.getOntology(), new OWLFunctionalSyntaxOntologyFormat());
 //		System.exit(1);
@@ -120,7 +134,14 @@ public class Main {
 		// setup logging (after spec-parsing, log-level may depend on specification
 		String logFile = ((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR)).getAbsolutePath();
 		if(!logFile.endsWith("/")) logFile += "/";
-		setupLogging(logFile + StaticValues.LOGGER_FILE, (Level)INPUT.getParameters().getValue(GeneralParameters.LOG_LEVEL));	
+		setupLogging(logFile + StaticValues.LOGGER_FILE, (Level)INPUT.getParameters().getValue(GeneralParameters.LOG_LEVEL));
+		
+		// optional:
+		int i = 1;
+		for(OWLClassExpression query : INPUT.getQueries()){
+			LOG.fine("Query " + i + ": " + query);
+			i++;
+		}
 		
 		TRACKER.start(StaticValues.TIME_PROFILE_CHECK);
 		// validate OWL Profile (The type of profile is fixed in StaticValues
@@ -149,15 +170,17 @@ public class Main {
 		// to decide the type of algorithm depending on the ontology structure)
 		GeneralELRelaxedInstancesAlgorithm algo = new GeneralELRelaxedInstancesAlgorithm();
 
-		Map<OWLNamedIndividual, Double> answers = algo.relaxedInstances((WeightedInputSpecification)INPUT);
+		Map<Integer, Map<OWLNamedIndividual, Double>> answers = algo.relaxedInstances((WeightedInputSpecification)INPUT);
 		
 		GeneralELOutputGenerator outGenerator = new GeneralELOutputGenerator(algo, INPUT);
 		
-		String resultMsg = answers.size() + " elements have a similarity greater than " + INPUT.getThreshold() + " to " + INPUT.getQuery() + "\n";
-		if(LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE){
-			resultMsg += outGenerator.renderInstanceList();
+		for(int query = 1; query <= INPUT.getQueries().size(); query++){
+			String resultMsg = "Query " + query + ": " + answers.get(query).size() + " elements have a similarity greater than " + INPUT.getThreshold() + " to " + INPUT.getQueries().get(query-1) + "\n";
+			if(LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE){
+				resultMsg += outGenerator.renderInstanceList(query);
+			}
+			LOG.info(resultMsg);
 		}
-		LOG.info(resultMsg);
 		
 		// the following 3 lines would be executed from the shutdown hook anyway, could omit removing hook
 		// only difference is that the completed algorithm is present in the output generator

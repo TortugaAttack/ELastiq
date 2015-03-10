@@ -2,6 +2,7 @@ package interpretation.generator;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,12 +40,21 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 	private static final TimeTracker TRACKER = TimeTracker.getInstance();
 	private static final String LOCAL_LOGGER_NAME = "QTBox-Generator-Logger";
 	
+	private Set<OWLClassExpression> multiAccessTracker;
+	private int needlessAccesses;
+	public int getNeedlessAccesses(){
+		return needlessAccesses;
+	}
+	
 	public IterativeQTBoxModelGenerator(OWLClassExpression concept){
 		this(concept, true);
 	}
 	
 	public IterativeQTBoxModelGenerator(OWLClassExpression concept, boolean normalize) {
 		super(concept, normalize);
+		
+		multiAccessTracker = new HashSet<OWLClassExpression>();
+		needlessAccesses = 0;
 	}
 	
 	@Override
@@ -73,6 +83,7 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 		
 		return canonInterpretation;
 	}
+	
 	/**
 	 * Recursively creates (or just uses) domain node successors and takes care of successor domain nodes.
 	 * Take care of cyclic node succesoors.
@@ -80,11 +91,13 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 	 */
 	protected void unravelTBoxNodeSuccessors(DomainNode<OWLClassExpression> node, Set<DomainNode<OWLClassExpression>> unraveled){
 		OWLReasoner reasoner = m_ontologyOperator.getReasoner();
+		int supClassSum = 0;
 		for(Node<OWLClass> nodes : reasoner.getSuperClasses(node.getId(), false)){
 			for(OWLClass superclass : nodes.getEntities()){
 				if(m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(superclass)){
 					OWLClassExpression ce = m_ontologyOperator.getDefinition(superclass);
 					if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
+						supClassSum++;
 						// now ce is subsuming node.id, thus suggesting a successor relation
 
 						OWLObjectSomeValuesFrom some = (OWLObjectSomeValuesFrom)ce;
@@ -96,12 +109,28 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 						}
 						
 						// these things are needed to check for subsumption relations to successor nodes
-						currentIdSubClasses = m_ontologyOperator.getReasoner().getSubClasses(some.getFiller(), false);
-						currentIdSuperClasses = m_ontologyOperator.getReasoner().getSuperClasses(some.getFiller(), false);
-						currentIdEqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(some.getFiller());
+						if(!m_subClassBuffer.containsKey(some.getFiller())){
+							if(multiAccessTracker.contains(some.getFiller())){
+								needlessAccesses++;
+							}else{
+								multiAccessTracker.add(some.getFiller());
+							}
+							TRACKER.start("Elk access", BlockOutputMode.COMPLETE, true);
+							currentIdSubClasses = reasoner.getSubClasses(some.getFiller(), false);
+							currentIdSuperClasses = reasoner.getSuperClasses(some.getFiller(), false);
+							currentIdEqClasses = reasoner.getEquivalentClasses(some.getFiller());
+							TRACKER.stop("Elk access");
+							if(m_useBuffer){
+								m_subClassBuffer.put(some.getFiller(), currentIdSubClasses.getFlattened());
+								m_superClassBuffer.put(some.getFiller(), currentIdSuperClasses.getFlattened());
+								m_equivalentClassBuffer.put(some.getFiller(), currentIdEqClasses.getEntities());
+							}
+						}
 						
 						if(!isSuccessorRepresented(node, newNode, some.getProperty().asOWLObjectProperty())){
-							removeIncludedSuccessors(some.getProperty().asOWLObjectProperty(), node, some.getFiller());
+							StatStore.getInstance().enterValue("removed subsuming successors",
+									removeIncludedSuccessors(some.getProperty().asOWLObjectProperty(), node, some.getFiller()).size()*1.0
+							);
 							
 							if(nodeJustCreated) // only invoke instantiator procedure when node is actually added
 								addInstantiators(newNode);
@@ -114,11 +143,14 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 				}
 			}
 		}
+		StatStore.getInstance().enterValue("interesting super classes for unraveling", supClassSum*1.0);
 		
+		int eqClassSum = 0;
 		for(OWLClass equivClass : reasoner.getEquivalentClasses(node.getId())){
 			if(m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(equivClass)){
 				OWLClassExpression ce = m_ontologyOperator.getDefinition(equivClass);
 				if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
+					eqClassSum++;
 					// now ce is subsuming node.id, thus suggesting a successor relation
 
 					OWLObjectSomeValuesFrom some = (OWLObjectSomeValuesFrom)ce;
@@ -129,9 +161,23 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 					}
 					
 					// these things are needed to check for subsumption relations to successor nodes
-					currentIdSubClasses = m_ontologyOperator.getReasoner().getSubClasses(some.getFiller(), false);
-					currentIdSuperClasses = m_ontologyOperator.getReasoner().getSuperClasses(some.getFiller(), false);
-					currentIdEqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(some.getFiller());
+					if(!m_subClassBuffer.containsKey(some.getFiller())){
+						if(multiAccessTracker.contains(some.getFiller())){
+							needlessAccesses++;
+						}else{
+							multiAccessTracker.add(some.getFiller());
+						}
+						TRACKER.start("Elk access", BlockOutputMode.COMPLETE, true);
+						currentIdSubClasses = reasoner.getSubClasses(some.getFiller(), false);
+						currentIdSuperClasses = reasoner.getSuperClasses(some.getFiller(), false);
+						currentIdEqClasses = reasoner.getEquivalentClasses(some.getFiller());
+						TRACKER.stop("Elk access");
+						if(m_useBuffer){
+							m_subClassBuffer.put(some.getFiller(), currentIdSubClasses.getFlattened());
+							m_superClassBuffer.put(some.getFiller(), currentIdSuperClasses.getFlattened());
+							m_equivalentClassBuffer.put(some.getFiller(), currentIdEqClasses.getEntities());
+						}
+					}
 					
 					if(!isSuccessorRepresented(node, newNode, some.getProperty().asOWLObjectProperty())){
 						removeIncludedSuccessors(some.getProperty().asOWLObjectProperty(), node, some.getFiller());
@@ -141,6 +187,7 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 				}
 			}
 		}
+		StatStore.getInstance().enterValue("interesting equivalent classes for unraveling", eqClassSum*1.0);
 		
 		// only after all successors are determined, unravel them
 		for(OWLObjectProperty r : node.getSuccessorRoles()){

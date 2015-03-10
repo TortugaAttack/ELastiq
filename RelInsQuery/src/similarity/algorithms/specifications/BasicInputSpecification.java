@@ -1,6 +1,8 @@
 package similarity.algorithms.specifications;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -9,6 +11,7 @@ import javax.jws.soap.SOAPBinding.ParameterStyle;
 import main.Main;
 import main.StaticValues;
 
+import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEntity;
@@ -26,7 +29,7 @@ public class BasicInputSpecification implements IInputSpecification {
 
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 	
-	private OWLClassExpression m_query;
+	private List<OWLClassExpression> m_queries;
 	
 	private OWLOntology m_ontology;
 	
@@ -38,7 +41,11 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	private GeneralParameters m_parameters;
 	
+	private OWLQueryParser m_queryParser;
+	
 	public BasicInputSpecification() {
+		m_queries = new ArrayList<OWLClassExpression>();
+		
 		m_primitiveMeasure = new DefaultEntitySimilarityMeasure();
 		
 		m_weightingFunction = new EntityWeightingFunction();
@@ -65,7 +72,7 @@ public class BasicInputSpecification implements IInputSpecification {
 			return false;
 		}
 		
-		if(m_query == null){
+		if(m_queries == null){
 			System.err.println("No query specified.");
 			return false;
 		}
@@ -79,18 +86,24 @@ public class BasicInputSpecification implements IInputSpecification {
 	}
 	
 	/* ************* setters *********** */
-	public void setQuery(String classExpression){
+	public void addQuery(String classExpression){
 		if(m_ontology == null){
 			LOG.severe("Unable to parse query without specified ontology. Regard the order of your input specifications.");
 			return;
 		}
-		OWLQueryParser parser = new OWLQueryParser(m_ontology);
+		if(m_queryParser == null)
+			m_queryParser = new OWLQueryParser(m_ontology);
 		// just use default
-		setQuery(parser.parse(classExpression));
+		try{
+			addQuery(m_queryParser.parse(classExpression));
+		}catch(OWLParserException ex){
+			LOG.warning(ex.getMessage());
+			// go on, just skip a failed query
+		}
 	}
 	
-	public void setQuery(OWLClassExpression m_query) {
-		this.m_query = m_query;
+	public void addQuery(OWLClassExpression query) {
+		this.m_queries.add(query);
 	}
 
 	public void setOntologyFile(String path){
@@ -119,8 +132,8 @@ public class BasicInputSpecification implements IInputSpecification {
 		return m_ontology;
 	}
 	
-	public OWLClassExpression getQuery(){
-		return m_query;
+	public List<OWLClassExpression> getQueries(){
+		return m_queries;
 	}
 	
 	public double getThreshold(){

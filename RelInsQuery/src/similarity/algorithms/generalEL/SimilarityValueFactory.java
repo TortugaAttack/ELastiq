@@ -41,31 +41,73 @@ public class SimilarityValueFactory {
 		return _instance;
 	}
 	
+	public SimilarityValue initializeSimilarityValue(PointedInterpretation p, PointedInterpretation q){
+		SimilarityValue v = new SimilarityValue(p, q);
+//		LOG.fine("Adding similarity value " + v + " to the pool.");
+		addTo(v, m_pool);
+		return v;
+	}
+	
+//	public int calls = 0;
+//	public long time1 = 0;
+//	public long time2 = 0;
+//	public long time3 = 0;
 	public SimilarityValue getSimilarityValue(PointedInterpretation p, PointedInterpretation q, int i){
-		Set<Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>>> searchSpaces =
-				new HashSet<Map<PointedInterpretation,Map<PointedInterpretation,SimilarityValue>>>();
-		searchSpaces.add(m_pool);
-		/*if(i >= 1)*/ searchSpaces.add(m_upToDate); // no values from iteration 0 can be in upToDate
-		
-		for(Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> searchSpace : searchSpaces){
+//		calls++;
+//		long start = System.currentTimeMillis();
+//		Set<Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>>> searchSpaces 
+//				= new HashSet<Map<PointedInterpretation,Map<PointedInterpretation,SimilarityValue>>>();
+//		
+//		searchSpaces.add(m_pool);
+//		/*if(i >= 1)*/ searchSpaces.add(m_upToDate); // no values from iteration 0 can be in upToDate
+//		time1 += System.currentTimeMillis() - start;
+//		start = System.currentTimeMillis();
+//		for(Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> searchSpace : searchSpaces){
+			// search task pool first
 			// one way
-			if(searchSpace.containsKey(p)){
-				if(searchSpace.get(p).containsKey(q))
-					return searchSpace.get(p).get(q);
+			if(m_pool.containsKey(p)){
+				if(m_pool.get(p).containsKey(q)){
+//					time2 += System.currentTimeMillis() - start;
+					return m_pool.get(p).get(q);
+				}
 			}
 			// other way
-			if(searchSpace.containsKey(q)){
-				if(searchSpace.get(q).containsKey(p))
-					return searchSpace.get(q).get(p);
+			if(m_pool.containsKey(q)){
+				if(m_pool.get(q).containsKey(p)){
+//					time2 += System.currentTimeMillis() - start;
+					return m_pool.get(q).get(p);
+				}
 			}
-		}
+			// other map -> uptoDate
+			// one way
+			if(m_upToDate.containsKey(p)){
+				if(m_upToDate.get(p).containsKey(q)){
+//					time2 += System.currentTimeMillis() - start;
+					return m_upToDate.get(p).get(q);
+				}
+			}
+			// other way
+			if(m_upToDate.containsKey(q)){
+				if(m_upToDate.get(q).containsKey(p)){
+//					time2 += System.currentTimeMillis() - start;
+					return m_upToDate.get(q).get(p);
+				}
+			}
+//		}
+//		time2 += System.currentTimeMillis() - start;
+//		start = System.currentTimeMillis();
+//		if(calls >= 1000){
+//			calls = 0;
+//			System.out.println(time + " ms per 1000 contains checks");
+//			time = 0;
+//		}
 		// nothing found in searchSpaces
 		if(i == 0){ // create new value and put it in pool
-			SimilarityValue v = new SimilarityValue(p, q);
-			LOG.fine("Adding similarity value " + v + " to the pool.");
-			addTo(v, m_pool);
-			return v;
+			SimilarityValue ret = initializeSimilarityValue(p, q);
+//			time3 += System.currentTimeMillis() - start;
+			return ret;
 		}
+//		time3 += System.currentTimeMillis() - start;
 		return null;
 	}
 	
@@ -164,6 +206,20 @@ public class SimilarityValueFactory {
 	
 	public void registerInteresting(SimilarityValue v){
 		addTo(v, m_valuesOfInterest);
+	}
+	
+	public void resetFactory(){
+		m_valuesOfInterest = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+		m_pool = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+	}
+	
+	public int getOpenTaskAmount(){
+		int size = 0;
+		for(PointedInterpretation p : m_pool.keySet()){
+			size += m_pool.get(p).size();
+		}
+		return size;
 	}
 }
 

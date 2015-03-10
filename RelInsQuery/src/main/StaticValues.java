@@ -59,7 +59,10 @@ public class StaticValues {
 	public static final String TIME_REASONING = "elk reasoning";
 	// query answering time blocks
 	public static final String TIME_MAIN_ALGO = "query answering";
+	public static final String TIME_QUERY_BASE = "processing query ";
+	public static final String TIME_SIMFACTORY_PREP = "preparing sim-factory";
 	public static final String TIME_ITERATION = "iteration";
+	public static final String TIME_FINALIZING_RESULTS = "finalizing results and outputs";
 	
 	/* ************ statistically tracked values ***************** */
 	public static final String STAT_ASSOCIATION_CONTAINS_CHECKS = "class association contains checks";

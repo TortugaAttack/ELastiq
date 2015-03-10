@@ -181,7 +181,20 @@ public class WeightedInputSpecificationParser {
 			
 		}
 		
-		if(queryString != "") m_result.setQuery(queryString);
+		if(queryString != ""){
+			File qF;
+			if((qF = new File(queryString)).isFile()){
+				// load queries from file
+				FileReader fr = new FileReader(qF);
+				BufferedReader read = new BufferedReader(fr);
+				String queryLine = null;
+				while((queryLine = read.readLine()) != null){
+					m_result.addQuery(queryLine);
+				}
+			}else{
+				m_result.addQuery(queryString);
+			}
+		}
 		return line;
 	}
 	

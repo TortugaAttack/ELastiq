@@ -6,7 +6,7 @@ import java.util.Map;
 import main.StaticValues;
 
 public enum Block {
-	QUERY("query", "[a-zA-Z0-9 \\-_\\.\\(\\)]+"),
+	QUERY("query", "[a-zA-Z0-9 \\-_\\.\\(\\)\\/]+"),
 	ONTOLOGY("ontology", ".+"),
 	DISCOUNTING("discount", StaticValues.DOUBLE_0_1_REGEX),
 	WEIGHTS("weights", StaticValues.ENTITY_REGEX + ":[0-9]+(\\.[0-9]+){0,1}"),

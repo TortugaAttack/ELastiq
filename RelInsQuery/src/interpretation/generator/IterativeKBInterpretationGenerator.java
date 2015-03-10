@@ -73,6 +73,7 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 		
 		m_tbGenerator.useDomain(m_domain); // needed to build upon the current domain
 		m_tbGenerator.useOntology(ontology);
+		m_tbGenerator.setUseBuffer(true);
 		
 		OWLAxiomFlatteningTransformer restrictions = m_ontologyOperator.getExistentialRestrictionStore(); // flattens
 		
@@ -173,13 +174,18 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 		TRACKER.start(StaticValues.TIME_TBOX_SUCCESSORS, BlockOutputMode.COMPLETE, true);
 		LOG.info("unraveling " + introducedTBoxNodes.size() + " TBox domain nodes");
 		Set<DomainNode<OWLClassExpression>> unraveled = new HashSet<DomainNode<OWLClassExpression>>();
+		int skipping = 0;
 		for(DomainNode<OWLClassExpression> node : introducedTBoxNodes.keySet()){
 			// it must be reachable so far
 			if(introducedTBoxNodes.get(node) > 0 && !unraveled.contains(node)){
 				unraveled.add(node);
 				m_tbGenerator.unravelTBoxNodeSuccessors(node, unraveled);
+			}else{
+				skipping++;
 			}
 		}
+		StatStore.getInstance().enterValue("skipped direct TBox successors for unraveling", skipping*1.0);
+		StatStore.getInstance().enterValue("needless elk accesses (redundand)", m_tbGenerator.getNeedlessAccesses()*1.0);
 		TRACKER.stop(StaticValues.TIME_TBOX_SUCCESSORS);
 		
 		StatStore.getInstance().enterValue(StaticValues.STAT_KB_MODEL_SIZE, m_domain.size()*1.0);

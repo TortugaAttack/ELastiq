@@ -10,5 +10,5 @@ import similarity.algorithms.specifications.IInputSpecification;
 
 public interface IRelaxedInstancesAlgorithm<T extends IInputSpecification> {
 
-	public Map<OWLNamedIndividual, Double> relaxedInstances(T specification);
+	public Map<Integer, Map<OWLNamedIndividual, Double>> relaxedInstances(T specification);
 }

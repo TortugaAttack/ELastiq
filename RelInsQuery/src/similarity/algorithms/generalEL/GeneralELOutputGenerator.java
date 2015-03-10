@@ -10,8 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import main.Main;
 import main.StaticValues;
 
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 
 import similarity.algorithms.specifications.BasicInputSpecification;
@@ -69,7 +71,18 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderInstanceList(){
-		return renderInstanceList(m_algorithm.getAnswers());
+		StringBuilder sb = new StringBuilder();
+		List<OWLClassExpression> queries = m_specification.getQueries();
+		for(int query : m_algorithm.getAnswers().keySet()){
+			sb.append("Query " + query + ": " + queries.get(query-1) + "\n" +
+					m_algorithm.getAnswers().get(query).size() + " answers:\n");
+			sb.append(renderInstanceList(m_algorithm.getAnswers().get(query)));
+		}
+		return sb.toString();
+	}
+	
+	public String renderInstanceList(int query){
+		return renderInstanceList(m_algorithm.getAnswers().get(query));
 	}
 	
 	public String renderInstanceList(final Map<OWLNamedIndividual, Double> instances){
@@ -87,13 +100,23 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderCSVTable(){
-		return renderCSVTable(false);
+		StringBuilder sb = new StringBuilder();
+		List<OWLClassExpression> queries = m_specification.getQueries();
+		for(int query : m_algorithm.getAnswers().keySet()){
+			sb.append("Query " + query + ": " + queries.get(query-1) + "\n");
+			sb.append(renderCSVTable(query));
+		}
+		return sb.toString();
 	}
 	
-	public String renderCSVTable(boolean ascending){
+	public String renderCSVTable(int query){
+		return renderCSVTable(query, false);
+	}
+	
+	public String renderCSVTable(int query, boolean ascending){
 		final String COL_SEP = "\t";
 		final String LINE_SEP = ";\n";
-		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(false);
+		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(query, false);
 		StringBuilder sb = new StringBuilder();
 		// table head
 		sb.append("i");
@@ -116,11 +139,21 @@ public class GeneralELOutputGenerator {
 	}
 	
 	public String renderASCIITable(){
-		return renderASCIITable(false);
+		StringBuilder sb = new StringBuilder();
+		List<OWLClassExpression> queries = m_specification.getQueries();
+		for(int query : m_algorithm.getAnswers().keySet()){
+			sb.append("Query " + query + ": " + queries.get(query-1) + "\n");
+			sb.append(renderASCIITable(query));
+		}
+		return sb.toString();
 	}
 	
-	public String renderASCIITable(boolean ascending){
-		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(false);
+	public String renderASCIITable(int query){
+		return renderASCIITable(query, false);
+	}
+	
+	public String renderASCIITable(int query, boolean ascending){
+		Map<Integer, Map<SimilarityValue, Double>> simiDevelopment = m_algorithm.getSimiDevelopment(query, false);
 		if(simiDevelopment.keySet().size() == 0) return "";
 		StringBuilder sb = new StringBuilder();
 		int preLength = (simiDevelopment.keySet().size() + "").length();

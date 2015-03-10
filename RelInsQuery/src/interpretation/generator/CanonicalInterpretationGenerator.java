@@ -64,6 +64,12 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	
 	boolean m_normalize;
 	
+	protected Map<OWLClassExpression, Set<OWLClass>> m_superClassBuffer;
+	protected Map<OWLClassExpression, Set<OWLClass>> m_equivalentClassBuffer;
+	protected Map<OWLClassExpression, Set<OWLClass>> m_subClassBuffer;
+	
+	protected boolean m_useBuffer;
+	
 	Logger LOG;
 	
 	public CanonicalInterpretationGenerator() {
@@ -87,6 +93,11 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		m_normalize = normalizing;
 		
 		LOG = Logger.getLogger(LOCAL_LOGGER_NAME);
+		
+		m_useBuffer = false;
+		m_superClassBuffer = new HashMap<OWLClassExpression, Set<OWLClass>>();
+		m_subClassBuffer = new HashMap<OWLClassExpression, Set<OWLClass>>();
+		m_equivalentClassBuffer = new HashMap<OWLClassExpression, Set<OWLClass>>();
 	}
 	
 	@Override
@@ -304,9 +315,16 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 				// only compare successors to other class domain elements
 				if(succ.getId() instanceof OWLClass){
 //					if(succ.getInstantiators().containsAll(to.getInstantiators())){ // could be done with reasoner
-					if(subClasses.containsEntity((OWLClass)succ.getId())
-							|| eqClasses.contains((OWLClass)succ.getId())){ // if there exists a successors more (or equally) specific than the new one
-						return true;
+					if(m_useBuffer){
+						if(m_subClassBuffer.get((OWLClass)to.getId()).contains((OWLClass)succ.getId())
+								|| m_equivalentClassBuffer.get((OWLClass)to.getId()).contains((OWLClass)succ.getId())){
+							return true;
+						}
+					}else{
+						if(subClasses.containsEntity((OWLClass)succ.getId())
+								|| eqClasses.contains((OWLClass)succ.getId())){ // if there exists a successors more (or equally) specific than the new one
+							return true;
+						}
 					}
 				}
 			}
@@ -348,10 +366,17 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 				if(succ.getId() instanceof OWLClassExpression){ // only inspect class to class relations
 					OWLClass succClass = getClassRepresentation((OWLClassExpression)succ.getId());
 					// if newSucc is more specific than succ, remove succ
-					if(superClasses.containsEntity(succClass)){
-						it.remove();
-						removed.add(m_domain.getDomainNode((OWLClassExpression)succ.getId()));
-//						mark_removed.add(succ);
+					if(m_useBuffer){
+						if(m_superClassBuffer.get(newSucc).contains(succClass)){
+							it.remove();
+							removed.add(m_domain.getDomainNode((OWLClassExpression)succ.getId()));
+						}
+					}else{
+						if(superClasses.containsEntity(succClass)){
+							it.remove();
+							removed.add(m_domain.getDomainNode((OWLClassExpression)succ.getId()));
+	//						mark_removed.add(succ);
+						}
 					}
 				}// else what about individual domain elements
 			}
@@ -387,11 +412,12 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	}
 	
 	public OWLClass getClassRepresentation(OWLClassExpression ex){
+		if(ex != null && ex.equals(m_referenceExpression)) // before OWLClass check, in case referenceExpression is also a class
+			return m_referenceClass;
+		
 		if(ex instanceof OWLClass){
 			return (OWLClass)ex;
 		}
-		if(ex != null && ex.equals(m_referenceExpression))
-			return m_referenceClass;
 
 		return m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(ex);
 	}
@@ -452,6 +478,10 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	 */
 	public void setNormalizingFlag(boolean normalize){
 		this.m_normalize = normalize;
+	}
+	
+	public void setUseBuffer(boolean buffer){
+		m_useBuffer = buffer;
 	}
 	
 	/**
