@@ -3,11 +3,9 @@ package interpretation.ds;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 public class CanonicalDomain implements IDomain {
 

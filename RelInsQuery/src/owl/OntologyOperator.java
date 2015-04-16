@@ -87,7 +87,7 @@ public class OntologyOperator implements IOWLOntologyExtension {
 		return m_reasoner;
 	}
 	
-	public OWLAxiomFlatteningTransformer getExistentialRestrictionStore(){
+	public OWLAxiomFlatteningTransformer getFlatteningTransformer(){
 //		if(!isFlat() || m_ontologyChanged)
 		if(!isFlat())
 			flatten();

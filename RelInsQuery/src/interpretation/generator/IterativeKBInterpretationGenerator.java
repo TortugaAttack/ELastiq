@@ -2,7 +2,6 @@ package interpretation.generator;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,18 +14,15 @@ import main.StaticValues;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
-import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import owl.OntologyOperator;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 import statistics.StatStore;
-import sun.awt.geom.AreaOp.IntOp;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 
@@ -46,6 +42,11 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 	
 	@Override
 	public CanonicalInterpretation generate(OWLOntology ontology) {
+		// by default create the model over all ABox individuals
+		return generate(ontology, ontology.getIndividualsInSignature());
+	}
+	
+	public CanonicalInterpretation generate(OWLOntology ontology, Set<OWLNamedIndividual> individuals) {
 		LOG.info("starting KB model generation");
 		m_ontologyOperator = OntologyOperator.getOntologyOperator(ontology);
 		
@@ -75,7 +76,7 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 		m_tbGenerator.useOntology(ontology);
 		m_tbGenerator.setUseBuffer(true);
 		
-		OWLAxiomFlatteningTransformer restrictions = m_ontologyOperator.getExistentialRestrictionStore(); // flattens
+		OWLAxiomFlatteningTransformer restrictions = m_ontologyOperator.getFlatteningTransformer(); // flattens
 		
 		LOG.info("creating " + ontology.getIndividualsInSignature().size() + " individual domain elements");
 		// can be improved by not iterating all individual domain elements twice
@@ -86,7 +87,7 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 		
 		LOG.info("adding direct successors to all domain elements");
 		Map<DomainNode<OWLClassExpression>, Integer> introducedTBoxNodes = new HashMap<DomainNode<OWLClassExpression>, Integer>();
-		for(OWLNamedIndividual ind : ontology.getIndividualsInSignature()){
+		for(OWLNamedIndividual ind : individuals){
 			DomainNode<OWLNamedIndividual> node = m_domain.getDomainNode(ind);
 			
 			TRACKER.start(StaticValues.TIME_EXPLICIT_SUCCESSORS, BlockOutputMode.COMPLETE, true);
@@ -132,7 +133,7 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 								}
 							}
 						}
-						// nothing represents the some.fille, thus create new element and add as successor
+						// nothing represents the some.filler, thus create new element and add as successor
 						if(addSuccessor){
 							if(m_normalize){
 								// also remove all more general nodes than this one as successor

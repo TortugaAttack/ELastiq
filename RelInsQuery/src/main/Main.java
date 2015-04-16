@@ -126,6 +126,8 @@ public class Main {
 		TRACKER.start(StaticValues.TIME_PREPROCESSING, BlockOutputMode.IN_TREE);
 		StatStore.getInstance().enterValue("TBox Axioms", INPUT.getOntology().getTBoxAxioms(true).size() * 1.0);
 		StatStore.getInstance().enterValue("ABox Axioms", INPUT.getOntology().getABoxAxioms(true).size() * 1.0);
+		StatStore.getInstance().enterValue("Concept-Names", INPUT.getOntology().getClassesInSignature(true).size() * 1.0);
+		StatStore.getInstance().enterValue("Roles", INPUT.getOntology().getObjectPropertiesInSignature(true).size() * 1.0);
 		StatStore.getInstance().enterValue("Individuals", INPUT.getOntology().getIndividualsInSignature(true).size() * 1.0);
 //		OWLOntologyLoader loader = new OWLOntologyLoader(INPUT.getOntology().getOWLOntologyManager());
 //		loader.save(new File("examples/snomed2010a_alt.ofn"), INPUT.getOntology(), new OWLFunctionalSyntaxOntologyFormat());
@@ -176,7 +178,7 @@ public class Main {
 		
 		for(int query = 1; query <= INPUT.getQueries().size(); query++){
 			String resultMsg = "Query " + query + ": " + answers.get(query).size() + " elements have a similarity greater than " + INPUT.getThreshold() + " to " + INPUT.getQueries().get(query-1) + "\n";
-			if(LOG.getLevel() == Level.INFO || LOG.getLevel() == Level.FINE){
+			if(/*LOG.getLevel() == Level.INFO || */LOG.getLevel() == Level.FINE){
 				resultMsg += outGenerator.renderInstanceList(query);
 			}
 			LOG.info(resultMsg);

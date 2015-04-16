@@ -65,7 +65,7 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 		
 		m_ontologyOperator = OntologyOperator.getOntologyOperator(ontology);
 		
-		m_ontologyOperator.getExistentialRestrictionStore(); // flattens
+		m_ontologyOperator.getFlatteningTransformer(); // flattens
 		
 		m_referenceClass = getFreshQueryClass("Q");
 		insertQueryAxiom(m_referenceClass);
@@ -94,7 +94,7 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 		int supClassSum = 0;
 		for(Node<OWLClass> nodes : reasoner.getSuperClasses(node.getId(), false)){
 			for(OWLClass superclass : nodes.getEntities()){
-				if(m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(superclass)){
+				if(m_ontologyOperator.getFlatteningTransformer().isIntermediary(superclass)){
 					OWLClassExpression ce = m_ontologyOperator.getDefinition(superclass);
 					if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
 						supClassSum++;
@@ -147,7 +147,7 @@ public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerat
 		
 		int eqClassSum = 0;
 		for(OWLClass equivClass : reasoner.getEquivalentClasses(node.getId())){
-			if(m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(equivClass)){
+			if(m_ontologyOperator.getFlatteningTransformer().isIntermediary(equivClass)){
 				OWLClassExpression ce = m_ontologyOperator.getDefinition(equivClass);
 				if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
 					eqClassSum++;

@@ -22,7 +22,12 @@ import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 import util.EasyMath;
 import util.EasyTimes;
-
+/**
+ * @deprecated unused by the iterative model generators
+ * 
+ * @author Maximilian Pensel - maximilian.pensel@gmx.de
+ *
+ */
 public class KBDomainElementGenerator implements IDomainElementGenerator{
 
 	private static final TimeTracker TRACKER = TimeTracker.getInstance();
@@ -50,10 +55,10 @@ public class KBDomainElementGenerator implements IDomainElementGenerator{
 		TRACKER.stop(StaticValues.TIME_INDIVIDUAL_DOMAIN_ELEM);
 		
 		TRACKER.start(StaticValues.TIME_ER_DOMAIN_ELEM);
-		m_generator.getLogger().info(m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions().size() + " Existential restrictions to generate domain elements from.");
+		m_generator.getLogger().info(m_generator.getOntologyOperator().getFlatteningTransformer().getRestrictions().size() + " Existential restrictions to generate domain elements from.");
 //		System.exit(1);
 		// add domain elements for all existential restriction filler concepts that don't have instances
-		for(OWLObjectSomeValuesFrom some : m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions()){
+		for(OWLObjectSomeValuesFrom some : m_generator.getOntologyOperator().getFlatteningTransformer().getRestrictions()){
 			if(small){ // only when requested tries to find a mapping to individuals
 				TRACKER.start(StaticValues.TIME_SMALL_MODEL, BlockOutputMode.COMPLETE, true);
 				NodeSet<OWLNamedIndividual> instances = reasoner.getInstances(some.getFiller(), false);

@@ -72,18 +72,30 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	
 	Logger LOG;
 	
+	/**
+	 * @deprecated you should use the iterative generators
+	 */
 	public CanonicalInterpretationGenerator() {
 		this(true);
 	}
 	
+	/**
+	 * @deprecated you should use the iterative generators
+	 */
 	public CanonicalInterpretationGenerator(OWLClassExpression expr){
 		this(expr, true);
 	}
 	
+	/**
+	 * @deprecated you should use the iterative generators
+	 */
 	public CanonicalInterpretationGenerator(boolean normalizing){
 		this(null, normalizing);
 	}
 	
+	/**
+	 * @deprecated you should use the iterative generators
+	 */
 	public CanonicalInterpretationGenerator(OWLClassExpression expr, boolean normalizing) {
 		this.m_referenceExpression = expr;
 		this.m_classAssociations = new HashMap<OWLClass, OWLNamedIndividual>();
@@ -121,7 +133,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 			((TBoxDomainElementGenerator)elemGen).registerConcept(m_referenceClass);
 		}
 		
-		OWLAxiomFlatteningTransformer exRestStore = m_ontologyOperator.getExistentialRestrictionStore(); // flattens here
+		OWLAxiomFlatteningTransformer exRestStore = m_ontologyOperator.getFlatteningTransformer(); // flattens here
 		OWLReasoner reasoner = m_ontologyOperator.getReasoner(isKBMode()); // precomputes inferences
 		
 		// the element generator creates all necessary domain elements and adds their instantiators
@@ -149,7 +161,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 			
 			// add all successor relations by iterating all known existential restrictions
 			int exR = 1;
-			for(OWLObjectSomeValuesFrom some : m_ontologyOperator.getExistentialRestrictionStore().getRestrictions()){
+			for(OWLObjectSomeValuesFrom some : m_ontologyOperator.getFlatteningTransformer().getRestrictions()){
 				if(exR % 1000 == 0){
 					System.out.println(exR + " restrictions handled");
 				}
@@ -208,7 +220,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 //		TRACKER.start("fetch domain element and intermediary", BlockOutputMode.COMPLETE, true);
 		DomainNode<?> toNode = getDomainElement(some.getFiller());
 		// the super class, intermediary stands for (some r B)
-		OWLClass superClass = m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(some);
+		OWLClass superClass = m_ontologyOperator.getFlatteningTransformer().getIntermediary(some);
 //		TRACKER.stop("fetch domain element and intermediary");
 		// add successors from all
 //		TRACKER.start("query elk", BlockOutputMode.COMPLETE, true);
@@ -281,7 +293,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 		
 		DomainNode<?> toNode = getDomainElement(some.getFiller());
 		
-		OWLClass someClass = m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(some);
+		OWLClass someClass = m_ontologyOperator.getFlatteningTransformer().getIntermediary(some);
 		
 		long start = System.currentTimeMillis();
 //		StatStore.getInstance().enterValue("instance accessing", 1.0);
@@ -402,12 +414,12 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 				OWLManager.getOWLDataFactory().getOWLSubClassOfAxiom(
 					queryClass,
 					m_referenceExpression.accept(
-							m_ontologyOperator.getExistentialRestrictionStore().getVisitor()
+							m_ontologyOperator.getFlatteningTransformer().getVisitor()
 					)
 		));
 		m_ontologyOperator.getOntology().getOWLOntologyManager()
-		.applyChanges(m_ontologyOperator.getExistentialRestrictionStore().getVisitor().getChanges());
-		m_ontologyOperator.getExistentialRestrictionStore().getVisitor().resetChangeList();
+		.applyChanges(m_ontologyOperator.getFlatteningTransformer().getVisitor().getChanges());
+		m_ontologyOperator.getFlatteningTransformer().getVisitor().resetChangeList();
 		m_ontologyOperator.ontologyChanged();
 	}
 	
@@ -419,7 +431,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 			return (OWLClass)ex;
 		}
 
-		return m_ontologyOperator.getExistentialRestrictionStore().getIntermediary(ex);
+		return m_ontologyOperator.getFlatteningTransformer().getIntermediary(ex);
 	}
 	
 	public DomainNode<?> getDomainElement(Object o){
@@ -440,7 +452,7 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	public boolean isRestrictedInstantiator(OWLClass c){
 		return c == null
 				|| c.isTopEntity()
-				|| m_ontologyOperator.getExistentialRestrictionStore().isIntermediary(c)
+				|| m_ontologyOperator.getFlatteningTransformer().isIntermediary(c)
 				|| c.equals(m_referenceClass);
 	}
 	

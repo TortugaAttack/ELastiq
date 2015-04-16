@@ -1,0 +1,114 @@
+%%This is a very basic article template.
+%%There is just one section and two subsections.
+\documentclass{article}
+
+\usepackage{amsfonts}
+\usepackage{stmaryrd}
+
+\newcommand{\ELH}{\ensuremath{\mathcal{ELH}}}
+\newcommand{\EL}{\ensuremath{\mathcal{EL}}}
+\newcommand{\C}{\ensuremath{\mathfrak{C}}}
+\newcommand{\I}{\ensuremath{\mathcal{I}}}
+\newcommand{\J}{\ensuremath{\mathcal{J}}}
+\newcommand{\T}{\ensuremath{\mathcal{T}}}
+\newcommand{\R}{\ensuremath{\mathcal{R}}}
+\newcommand{\NN}{\ensuremath{\mathbb{N}}}
+\newcommand{\RR}{\ensuremath{\mathbb{R}}}
+
+\begin{document}
+
+
+\section{Datastructures}
+
+\paragraph{\texttt{OntologyOperator}}
+Keeps track of the \texttt{OWLOntology} object, the reasoner and the
+\texttt{OWLAxiomFlatteningTransformer}. Every operation done on the ontology
+(reasoning, flattening, other transformations) should be deligated by the
+\texttt{OntologyOperator} or an extension of it. The \texttt{OntologyOperator}
+objects are singleton w.r.t. a given ontology (uniquely associated with an
+\texttt{OWLOntology}). Create or retrieve an ontology operator:
+
+\texttt{OntologyOperator.getOntology(OWLOntology o)}
+
+The operator gives access to reasoner and flattening transformer, this usually
+directly invokes inference computation or transformation.
+
+\paragraph{\texttt{FlatteningTransformer}} Uses the \texttt{OWLVisitor}
+structure to flatten all axioms in the TBox and ABox. Introduces intermediary concept names
+and their definitions with a unique namespace in the following way:
+\begin{itemize}
+  \item $\exists r. C \longrightarrow \exists r. ER_i$ and add $ER_i \equiv C$
+  to the TBox, if $C = \exists s.D$,
+  \item $\exists r. C \longrightarrow \exists r. CJ_j$ and add $CJ_j \equiv C$
+  to the TBox, if $C = \bigsqcap\limits_x D_x$
+\end{itemize}
+until every top-level concept description in an axiom is of the following form:
+\begin{center}
+$A$ $|$ $\bigsqcap\limits_x A_x$ $|$ $\exists r.A$
+\end{center}
+for $A,A_x\in N_C$ (including intermediary concept names). This way all
+existential restrictions in the TBox and ABox can be identified and iterated in
+order to create canonical models. This has the effect that some ids of domain
+nodes are intermediary concept names. In case you need the full concept
+description using only original concept names (no intermediaries), you can
+unravel exhaustively the TBox definitions of an intermediary. (Helper method
+\texttt{OntologyOperator.getDefinition(OWLClass c)} exists for that purpose).
+\paragraph{\texttt{CanonicalInterpretation}} The canonical interpretation can be
+named but bears no further function other than storing the
+\texttt{CanonicalDomain}.
+\paragraph{\texttt{CanonicalDomain}} Stores two maps of domain nodes
+\begin{center}
+\texttt{OWLNamedIndividual}$\mapsto$
+\texttt{DomainNode$<$OWLNamedIndividual$>$}\\
+\texttt{OWLClassExpression}$\mapsto$ \texttt{DomainNode$<$OWLClassExpression$>$}
+\end{center}
+one with \texttt{OWLNamedIndividual} ids (i.e. ABox domain elements $d_a\in
+\Delta^\I, a\in N_I$) and one with \texttt{OWLClassExpression} ids (i.e. TBox
+domain elements $d_C\in \Delta^\I, C\in \C(\EL)$). You can iterate all domain
+nodes or retrieve any domain node by its \texttt{id} through the
+\texttt{CanonicalDomain}. All successor relations are stored within the domain
+nodes.
+
+\paragraph{\texttt{DomainNode$<$T$>$}} Generic type describes the type of the
+\texttt{id} object for a\\ \texttt{DomainNode}, simply for identification
+purposes of individual-DomainNodes and concept- DomainNodes. There are different
+ways to retrieve the successors of a domain node. You can list all successor
+roles (\texttt{getSuccessorRoles()}), get all domain node successors directly by
+a given role (\texttt{getSuccessors(OWLObjectProperty r)}) or compile a list of
+\texttt{RoleConnection} objects. These objects do not need to be stored but in
+cases where pointed interpretations are required (the domain node itself does
+not know what interpretation it belongs to) you can use\\
+\texttt{getSuccessorConnections(OWLObjectProperty r)} to create these object
+collections.
+
+\section{Initialization and Usage}
+
+\paragraph{Interpretation Generation}
+The interpretation generation iterates all existential restrictions and requires
+reasoning w.r.t.\ their sub- or superclasses. This is why the flattening
+procedure simplifies the entire algorithm and allows to use the efficient
+\texttt{ElkReasoner}. There are two interpretation generators, the
+\texttt{IterativeKBInterpretationGenerator} and the
+\texttt{IterativeQTBoxInterpretationGenerator}. Both implement the
+\texttt{IInterpretationGenerator} interface and can therefore be used very
+generically. They have the following features in common:
+\begin{itemize}
+  \item \texttt{generate(OWLOntology o)}: the actual generator-method that uses
+  a given ontology and returns the final \texttt{CanonicalInterpretation}
+  \item \texttt{setLogger(Logger log)}: there are several logging outputs, if
+  you have a custom initialized logger, you can pass it here so that the logging
+  of the generators behaves as you require. Call this setter with \texttt{null}
+  in order to deactivate logging for the generator.
+  \item \texttt{getClassRepresentation(OWLClassExpression expr)}: a helper
+  method to get intermediary class expressions for reasoning purposes
+\end{itemize}
+
+There is the \texttt{InterpretationGeneratorFactory}, which can be used for easy
+creation of a generator. When calling the \texttt{create()} method with a
+concept description, it will automatically generate a QTBox generator. An
+additional option for the KB generator is passing a set of individuals to the
+generate method. This set is the base of the iterative unraveling of the
+canonical interpretation via successor relations. If no set is given explicitly,
+the set $sig(\mathcal{A}) \cap N_I$ is used.
+
+\end{document}

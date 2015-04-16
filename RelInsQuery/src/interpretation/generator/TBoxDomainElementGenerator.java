@@ -17,7 +17,12 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
-
+/**
+ * @deprecated unused by the iterative model generators
+ * 
+ * @author Maximilian Pensel - maximilian.pensel@gmx.de
+ *
+ */
 public class TBoxDomainElementGenerator implements
 		IDomainElementGenerator {
 
@@ -49,9 +54,9 @@ public class TBoxDomainElementGenerator implements
 			addInstantiators(node);
 		}
 		
-		m_generator.getLogger().info(m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions().size() + " Existential restrictions to generate domain elements from.");
+		m_generator.getLogger().info(m_generator.getOntologyOperator().getFlatteningTransformer().getRestrictions().size() + " Existential restrictions to generate domain elements from.");
 		// add all relevant domain elements and their instantiators
-		for(OWLObjectSomeValuesFrom some : m_generator.getOntologyOperator().getExistentialRestrictionStore().getRestrictions()){
+		for(OWLObjectSomeValuesFrom some : m_generator.getOntologyOperator().getFlatteningTransformer().getRestrictions()){
 			DomainNode<OWLClassExpression> node = (DomainNode<OWLClassExpression>)m_generator.getDomain().addDomainElement(some.getFiller());
 			
 			addInstantiators(node);

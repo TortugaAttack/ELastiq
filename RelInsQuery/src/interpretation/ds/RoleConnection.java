@@ -11,7 +11,7 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
  * @author Maximilian Pensel
  *
  */
-public class RoleAssertion {
+public class RoleConnection {
 
 	private DomainNode<?> m_from;
 	private DomainNode<?> m_to;
@@ -20,13 +20,13 @@ public class RoleAssertion {
 	
 	private OWLObjectProperty m_property;
 	
-	public RoleAssertion(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property) {
+	public RoleConnection(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property) {
 		m_from = from;
 		m_to = to;
 		m_property = property;
 	}
 	
-	public RoleAssertion(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property, CanonicalInterpretation pointed) {
+	public RoleConnection(DomainNode<?> from, DomainNode<?> to, OWLObjectProperty property, CanonicalInterpretation pointed) {
 		this(from, to, property);
 		if(pointed != null)
 			m_toPointed = new PointedInterpretation(pointed, to);

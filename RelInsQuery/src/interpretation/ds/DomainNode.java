@@ -1,6 +1,5 @@
 package interpretation.ds;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,13 +7,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.semanticweb.owlapi.model.OWLClass;
-import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-import owl.IOWLOntologyExtension;
-import owl.OntologyOperator;
 /**
  * Generic type DomainNode, identification of domain nodes may vary between use-cases.
  * 
@@ -86,33 +80,48 @@ public class DomainNode<T> {
 			return m_successors.get(r);
 		return Collections.emptySet();
 	}
-	
-	public Set<RoleAssertion> getSuccessorObjects(OWLObjectProperty r){
+	/**
+	 * Compile RoleConnection set for all successors through the given role
+	 * without pointed interpretation.
+	 * @param r
+	 * @return
+	 */
+	public Set<RoleConnection> getSuccessorObjects(OWLObjectProperty r){
 		return getSuccessorObjects(r, null);
 	}
 	
-	public Set<RoleAssertion> getSuccessorObjects(OWLObjectProperty r, CanonicalInterpretation c){
-		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
+	/**
+	 * Compile RoleConnection set for all successors through the given role.
+	 * @param r
+	 * @param c
+	 * @return
+	 */
+	public Set<RoleConnection> getSuccessorObjects(OWLObjectProperty r, CanonicalInterpretation c){
+		Set<RoleConnection> successors = new HashSet<RoleConnection>();
 		for(DomainNode<?> to : m_successors.get(r)){
-			successors.add(new RoleAssertion(this, to, r, c));
+			successors.add(new RoleConnection(this, to, r, c));
 		}
 		return successors;
 	}
-	
-	public Set<RoleAssertion> getSuccessorObjects(){
-		return getSuccessorObjects((CanonicalInterpretation)null); // interesting.. typecasting null ^^
+	/**
+	 * Compile RoleConnection set for all role successors without a pointed interpretation.
+	 * @return
+	 */
+	public Set<RoleConnection> getSuccessorObjects(){
+		return getSuccessorObjects((CanonicalInterpretation)null);
 	}
 	
 	/**
+	 * Compile RoleConnection set for all role successors.
 	 * If no canonical interpretation is given, the returned roles will still contain the destination node.
 	 * @param c
 	 * @return
 	 */
-	public Set<RoleAssertion> getSuccessorObjects(CanonicalInterpretation c){
-		Set<RoleAssertion> successors = new HashSet<RoleAssertion>();
+	public Set<RoleConnection> getSuccessorObjects(CanonicalInterpretation c){
+		Set<RoleConnection> successors = new HashSet<RoleConnection>();
 		for(OWLObjectProperty r : m_successors.keySet()){
 			for(DomainNode<?> to : m_successors.get(r)){
-				successors.add(new RoleAssertion(this, to, r, c));
+				successors.add(new RoleConnection(this, to, r, c));
 			}
 		}
 		
