@@ -16,10 +16,12 @@ import org.omg.CORBA._PolicyStub;
 public class SimilarityValueFactory {
 	
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
+	
+	private Set<SimilarityValue> m_tasks;
 
 	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_pool;
 	
-	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_upToDate;
+//	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_upToDate;
 	
 
 	/**
@@ -27,13 +29,20 @@ public class SimilarityValueFactory {
 	 */
 	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_valuesOfInterest;
 	
+//	private Set<PointedInterpretation> workingKeys;
+//	private Map<PointedInterpretation, Set<PointedInterpretation>> workingKeyPair;
+	
 	
 	private static SimilarityValueFactory _instance;
 	
 	private SimilarityValueFactory() {
 		m_pool = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
-		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+//		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+		m_tasks = new HashSet<SimilarityValue>();
 		m_valuesOfInterest = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+		
+//		workingKeys = new HashSet<PointedInterpretation>();
+//		workingKeyPair = new HashMap<PointedInterpretation, Set<PointedInterpretation>>();
 	}
 	
 	public static SimilarityValueFactory getFactory(){
@@ -45,6 +54,7 @@ public class SimilarityValueFactory {
 		SimilarityValue v = new SimilarityValue(p, q);
 //		LOG.fine("Adding similarity value " + v + " to the pool.");
 		addTo(v, m_pool);
+		m_tasks.add(v); // immediately let it calculate the task at some point
 		return v;
 	}
 	
@@ -80,19 +90,19 @@ public class SimilarityValueFactory {
 			}
 			// other map -> uptoDate
 			// one way
-			if(m_upToDate.containsKey(p)){
-				if(m_upToDate.get(p).containsKey(q)){
-//					time2 += System.currentTimeMillis() - start;
-					return m_upToDate.get(p).get(q);
-				}
-			}
-			// other way
-			if(m_upToDate.containsKey(q)){
-				if(m_upToDate.get(q).containsKey(p)){
-//					time2 += System.currentTimeMillis() - start;
-					return m_upToDate.get(q).get(p);
-				}
-			}
+//			if(m_upToDate.containsKey(p)){
+//				if(m_upToDate.get(p).containsKey(q)){
+////					time2 += System.currentTimeMillis() - start;
+//					return m_upToDate.get(p).get(q);
+//				}
+//			}
+//			// other way
+//			if(m_upToDate.containsKey(q)){
+//				if(m_upToDate.get(q).containsKey(p)){
+////					time2 += System.currentTimeMillis() - start;
+//					return m_upToDate.get(q).get(p);
+//				}
+//			}
 //		}
 //		time2 += System.currentTimeMillis() - start;
 //		start = System.currentTimeMillis();
@@ -125,40 +135,49 @@ public class SimilarityValueFactory {
 		return false;
 	}
 	
-	private boolean removeFrom(SimilarityValue v, Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> coll){
-		boolean successfullyRemoved = false;
-		if(coll.containsKey(v.getP1())){
-			if(coll.get(v.getP1()).containsKey(v.getP2())){
-				coll.get(v.getP1()).remove(v.getP2());
-				successfullyRemoved = true;
-			}
-			if(coll.get(v.getP1()).isEmpty())
-				coll.remove(v.getP1());
-		}
-		if(!successfullyRemoved)
-			LOG.warning("Did not remove " + v + ", because it was not found.");
-		return successfullyRemoved;
-	}
+//	private boolean removeFrom(SimilarityValue v, Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> coll){
+//		boolean successfullyRemoved = false;
+//		if(coll.containsKey(v.getP1())){
+//			if(coll.get(v.getP1()).containsKey(v.getP2())){
+//				coll.get(v.getP1()).remove(v.getP2());
+//				successfullyRemoved = true;
+//			}
+//			if(coll.get(v.getP1()).isEmpty())
+//				coll.remove(v.getP1());
+//		}
+//		if(!successfullyRemoved)
+//			LOG.warning("Did not remove " + v + ", because it was not found.");
+//		return successfullyRemoved;
+//	}
 	
-	public boolean pushUpdate(SimilarityValue v){
-		if(removeFrom(v, m_pool)){
-			if(addTo(v, m_upToDate)){
-				return true;
-			}else{
-				LOG.severe("Update push failed: adding " + v + " to upToDate pool failed.");
-			}
-		}else{
-			LOG.warning("Can't push update of " + v + ": not in the task pool.");
-		}
-		return false;
-	}
+//	public boolean pushUpdate(SimilarityValue v){
+//		if(removeFrom(v, m_pool)){
+//			if(addTo(v, m_upToDate)){
+//				return true;
+//			}else{
+//				LOG.severe("Update push failed: adding " + v + " to upToDate pool failed.");
+//			}
+//		}else{
+//			LOG.warning("Can't push update of " + v + ": not in the task pool.");
+//		}
+//		return false;
+//	}
 	
 	public void nextIteration(){
-		if(m_pool.isEmpty()){
-			m_pool = m_upToDate;
-			m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
-		}else{
-			LOG.severe("Can only increase current iteration if task pool is empty.");
+//		if(m_pool.isEmpty()){
+//			m_pool = m_upToDate;
+//			m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+//			workingKeys = new HashSet<PointedInterpretation>();
+//			workingKeyPair = new HashMap<PointedInterpretation, Set<PointedInterpretation>>();
+//		}else{
+//			LOG.severe("Can only increase current iteration if task pool is empty.");
+//		}
+		if(m_tasks.isEmpty()){
+			for(PointedInterpretation p1 : m_pool.keySet()){
+				for(PointedInterpretation p2 : m_pool.get(p1).keySet()){
+					m_tasks.add(m_pool.get(p1).get(p2));
+				}
+			}
 		}
 	}
 	
@@ -168,41 +187,81 @@ public class SimilarityValueFactory {
 	
 	public String getStatus(){
 		StringBuilder sb = new StringBuilder();
-		sb.append("Current Task Pool:\n");
+		sb.append("Current SimValue Pool:\n");
 		for(PointedInterpretation p1 : m_pool.keySet()){
 			for(PointedInterpretation p2 : m_pool.get(p1).keySet()){
 				sb.append(m_pool.get(p1).get(p2) + "\n");
 			}
 		}
 		
-		sb.append("\nUpToDate Pool:\n");
-		for(PointedInterpretation p1 : m_upToDate.keySet()){
-			for(PointedInterpretation p2 : m_upToDate.get(p1).keySet()){
-				sb.append(m_upToDate.get(p1).get(p2) + "\n");
-			}
-		}
+//		sb.append("\nUpToDate Pool:\n");
+//		for(PointedInterpretation p1 : m_upToDate.keySet()){
+//			for(PointedInterpretation p2 : m_upToDate.get(p1).keySet()){
+//				sb.append(m_upToDate.get(p1).get(p2) + "\n");
+//			}
+//		}
 		
 		return sb.toString();
 	}
 	
-	public boolean isPoolEmpty(){
-		return m_pool.isEmpty();
+	public boolean isTaskSetEmpty(){
+		return m_tasks.isEmpty();
 	}
 	
 	public SimilarityValue getNextTask(){
-		if(!isPoolEmpty()){
-			Iterator<PointedInterpretation> it1 = m_pool.keySet().iterator();
-			while(it1.hasNext()){
-				PointedInterpretation picked = it1.next();
-				Iterator<PointedInterpretation> it2 = m_pool.get(picked).keySet().iterator();
-				if(it2.hasNext()){
-					return m_pool.get(picked).get(it2.next());
-				}
+//		if(!isPoolEmpty()){
+//			Iterator<PointedInterpretation> it1 = m_pool.keySet().iterator();
+//			while(it1.hasNext()){
+//				PointedInterpretation picked = it1.next();
+//				Iterator<PointedInterpretation> it2 = m_pool.get(picked).keySet().iterator();
+//				while(it2.hasNext()){
+//					SimilarityValue ret = m_pool.get(picked).get(it2.next());
+//					if(workingKeyPair.containsKey(picked) && workingKeyPair.get(picked).contains(ret.getP2())){
+//						// already investigating this
+//						continue;
+//					}
+//					workingOn(ret.getP1(), ret.getP2());
+////					removeFrom(ret, m_pool);
+//					return ret;
+//				}
+//			}
+//		}
+//		System.err.println("No next task to compute.");
+//		return null; // not supposed to happen..
+		if(!m_tasks.isEmpty()){
+			Iterator<SimilarityValue> it = m_tasks.iterator();
+			if(it.hasNext()){
+				SimilarityValue ret = it.next();
+				it.remove(); // immediately remove it as task
+				return ret;
 			}
 		}
-		System.err.println("No next task to compute.");
-		return null; // not supposed to happen..
+		return null;
 	}
+	
+//	private void workingOn(PointedInterpretation key1, PointedInterpretation key2){
+//		if(!workingKeyPair.containsKey(key1)){
+//			workingKeyPair.put(key1, new HashSet<PointedInterpretation>());
+//		}
+//		workingKeyPair.get(key1).add(key2);
+//	}
+	
+	
+//	public Map<PointedInterpretation, SimilarityValue> getNextTasks(){
+//		if(!isPoolEmpty()){
+//			Iterator<PointedInterpretation> it = m_pool.keySet().iterator();
+//			while(it.hasNext()){
+//				PointedInterpretation picked = it.next();
+//				if(workingKeys.contains(picked)){
+//					continue;
+//				}else{
+//					workingKeys.add(picked);
+//					return m_pool.get(picked);
+//				}
+//			}
+//		}
+//		return new HashMap<PointedInterpretation, SimilarityValue>();
+//	}
 	
 	public void registerInteresting(SimilarityValue v){
 		addTo(v, m_valuesOfInterest);
@@ -211,7 +270,8 @@ public class SimilarityValueFactory {
 	public void resetFactory(){
 		m_valuesOfInterest = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 		m_pool = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
-		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
+		m_tasks = new HashSet<SimilarityValue>();
+//		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 	}
 	
 	public int getOpenTaskAmount(){

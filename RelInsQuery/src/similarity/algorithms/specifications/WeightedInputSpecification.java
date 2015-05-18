@@ -73,21 +73,24 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 				return;
 			}
 			OWLDataFactory df = getOntology().getOWLOntologyManager().getOWLDataFactory();
-			if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(entity1)))){
-				if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(entity2)))){
+			String oID = getOntology().getOntologyID().getOntologyIRI().toString();
+			IRI e1IRI = IRI.create(oID + "#" + entity1);
+			IRI e2IRI = IRI.create(oID + "#" + entity2);
+			if(getOntology().getClassesInSignature().contains(df.getOWLClass(e1IRI))){
+				if(getOntology().getClassesInSignature().contains(df.getOWLClass(e2IRI))){
 					// both strings represent existing classes
 					(m_primitiveMeasure).registerSimilarity(
-							df.getOWLClass(IRI.create(entity1)),
-							df.getOWLClass(IRI.create(entity2)),
+							df.getOWLClass(e1IRI),
+							df.getOWLClass(e2IRI),
 							sim);
 				}
 			}
-			if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(entity1)))){
-				if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(entity2)))){
+			if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(e1IRI))){
+				if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(e2IRI))){
 					// both strings represent existing properties
 					(m_primitiveMeasure).registerSimilarity(
-							df.getOWLObjectProperty(IRI.create(entity1)),
-							df.getOWLObjectProperty(IRI.create(entity2)),
+							df.getOWLObjectProperty(e1IRI),
+							df.getOWLObjectProperty(e2IRI),
 							sim);
 				}
 			}
@@ -100,11 +103,13 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 			return;
 		}
 		OWLDataFactory df = getOntology().getOWLOntologyManager().getOWLDataFactory();
-		if(getOntology().getClassesInSignature().contains(df.getOWLClass(IRI.create(strRep)))){
-			m_weightingFunction.setWeight(df.getOWLClass(IRI.create(strRep)), weight);
+		String oID = getOntology().getOntologyID().getOntologyIRI().toString();
+		IRI entityIRI = IRI.create(oID+"#"+strRep);
+		if(getOntology().getClassesInSignature().contains(df.getOWLClass(entityIRI))){
+			m_weightingFunction.setWeight(df.getOWLClass(entityIRI), weight);
 		}
-		if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(IRI.create(strRep)))){
-			m_weightingFunction.setWeight(df.getOWLObjectProperty(IRI.create(strRep)), weight);
+		if(getOntology().getObjectPropertiesInSignature().contains(df.getOWLObjectProperty(entityIRI))){
+			m_weightingFunction.setWeight(df.getOWLObjectProperty(entityIRI), weight);
 		}
 	}
 	

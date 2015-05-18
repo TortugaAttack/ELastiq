@@ -1,6 +1,9 @@
 package interpretation.generator;
 
-import java.util.Collection;
+import interpretation.ds.CanonicalDomain;
+import interpretation.ds.CanonicalInterpretation;
+import interpretation.ds.DomainNode;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -9,36 +12,22 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import interpretation.ds.CanonicalDomain;
-import interpretation.ds.DomainNode;
-import interpretation.ds.IDomain;
-import interpretation.ds.CanonicalInterpretation;
-
-import main.Main;
 import main.StaticValues;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAnonymousIndividual;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLEntity;
-import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-
-import owl.IOWLOntologyExtension;
 import owl.OntologyOperator;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 import statistics.StatStore;
@@ -409,7 +398,8 @@ public class CanonicalInterpretationGenerator implements IInterpretationGenerato
 	protected void insertQueryAxiom(OWLClass queryClass){
 //		Main.getOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
 //				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(queryClass, m_referenceExpression));
-		Main.getOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
+		
+		m_ontologyOperator.getOntology().getOWLOntologyManager().addAxiom(m_ontologyOperator.getOntology(),
 //				OWLManager.getOWLDataFactory().getOWLEquivalentClassesAxiom(
 				OWLManager.getOWLDataFactory().getOWLSubClassOfAxiom(
 					queryClass,

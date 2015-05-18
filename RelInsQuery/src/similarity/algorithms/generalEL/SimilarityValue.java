@@ -9,15 +9,15 @@ public class SimilarityValue {
 	
 	private int m_currentIteration;
 	
-	private double m_currentValue;
+	private double m_evenValue;
 
-	private double m_previousValue;
+	private double m_oddValue;
 	
 	protected SimilarityValue(PointedInterpretation p1, PointedInterpretation p2) {
 		// only accept creation in iteration 0
 		m_currentIteration = 0;
-		m_currentValue = 0.0;
-		m_previousValue = -1; // negative similarity: red flag
+		m_evenValue = 0.0;
+		m_oddValue = -1; // negative similarity: red flag
 		
 		m_p1 = p1;
 		m_p2 = p2;
@@ -28,21 +28,22 @@ public class SimilarityValue {
 	}
 	
 	public double getValue(int iteration) {
-		if(iteration == m_currentIteration){
-			return m_currentValue;
-		}else if(iteration == m_currentIteration - 1){
-			return m_previousValue;
-		}else{
-			return -1; // red flag
+		if(iteration % 2 == 0){
+			return m_evenValue;
+		}else {
+			return m_oddValue;
 		}
 	}
 	
 	public void setNewValue(double v){
 		m_currentIteration++;
-		m_previousValue = m_currentValue;
-		m_currentValue = v;
+		if(m_currentIteration % 2 == 0){ // if the new iteration is an even one, set the even value
+			m_evenValue = v;
+		}else {
+			m_oddValue = v;
+		}
 		
-		SimilarityValueFactory.getFactory().pushUpdate(this);
+//		SimilarityValueFactory.getFactory().pushUpdate(this);
 	}
 	
 	public PointedInterpretation getP1() {
@@ -60,13 +61,19 @@ public class SimilarityValue {
 		sb.append(m_p1 + ", ");
 		sb.append(m_p2+ ", ");
 		sb.append(m_currentIteration + ") = ");
-		sb.append(m_currentValue + "\t//\t");
+		if(m_currentIteration % 2 == 0)
+			sb.append(m_evenValue + "\t//\t");
+		else
+			sb.append(m_oddValue + "\t//\t");
 		
 		sb.append("msim(");
 		sb.append(m_p1 + ", ");
 		sb.append(m_p2+ ", ");
 		sb.append((m_currentIteration-1) + ") = ");
-		sb.append(m_previousValue);
+		if(m_currentIteration % 2 == 0)
+			sb.append(m_evenValue);
+		else
+			sb.append(m_oddValue);
 		
 		return sb.toString();
 	}

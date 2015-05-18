@@ -1,6 +1,6 @@
 package util;
 
-import interpretation.ds.RoleAssertion;
+import interpretation.ds.RoleConnection;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,22 +77,22 @@ public class SetMath {
 		return allSets;
 	}
 	
-	public static Set<Set<RoleAssertion>> getAllRoleSubsetsSmart(Set<RoleAssertion> reference, Set<RoleAssertion> set){
-		Set<RoleAssertion> mustBase = new HashSet<RoleAssertion>();
-		Set<RoleAssertion> variationBase = new HashSet<RoleAssertion>();
+	public static Set<Set<RoleConnection>> getAllRoleSubsetsSmart(Set<RoleConnection> reference, Set<RoleConnection> set){
+//		Set<RoleConnection> mustBase = new HashSet<RoleConnection>(); // never certain
+		Set<RoleConnection> variationBase = new HashSet<RoleConnection>();
 		WeightedInputSpecification spec = (WeightedInputSpecification)Main.getInputs();
-		for(RoleAssertion ref : reference){
-			for(RoleAssertion investigate : set){
-				if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) == 1){
+		for(RoleConnection ref : reference){
+			for(RoleConnection investigate : set){
+				/*if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) == 1){
 					mustBase.add(investigate);
-				}else if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) > 0){
+				}else */if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) > 0){
 					variationBase.add(investigate);
 				}// otherwise, leave definitely out
 			}
 		}
-		Set<Set<RoleAssertion>> allSets = new HashSet<Set<RoleAssertion>>();
-		for(Set<RoleAssertion> s : getAllSubsets(variationBase)){
-			s.addAll(mustBase);
+		Set<Set<RoleConnection>> allSets = new HashSet<Set<RoleConnection>>();
+		for(Set<RoleConnection> s : getAllSubsets(variationBase)){
+//			s.addAll(mustBase);
 			allSets.add(s);
 		}
 		return allSets;

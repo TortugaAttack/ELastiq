@@ -53,7 +53,8 @@ public class Main {
 		TimeTracker.getInstance().stopAll();
 		Logger.getLogger(StaticValues.LOGGER_NAME).info(TimeTracker.getInstance().createEvaluation());
 		GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
-		gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+		if(INPUT != null)
+			gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
 	}
 	
 	public static void main(String[] args) {

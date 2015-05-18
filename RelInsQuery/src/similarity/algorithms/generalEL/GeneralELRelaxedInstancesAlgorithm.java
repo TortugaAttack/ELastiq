@@ -4,22 +4,20 @@ import interpretation.ds.CanonicalDomain;
 import interpretation.ds.CanonicalInterpretation;
 import interpretation.ds.DomainNode;
 import interpretation.ds.PointedInterpretation;
-import interpretation.ds.RoleAssertion;
-import interpretation.generator.CanonicalInterpretationGenerator;
+import interpretation.ds.RoleConnection;
 import interpretation.generator.IInterpretationGenerator;
 import interpretation.generator.IterativeKBInterpretationGenerator;
 import interpretation.generator.IterativeQTBoxModelGenerator;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +29,6 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLEntity;
-import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
@@ -41,12 +38,10 @@ import similarity.algorithms.specifications.BasicInputSpecification;
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import similarity.algorithms.specifications.TerminationMethod;
-import similarity.algorithms.specifications.WeightedInputSpecification;
 import statistics.StatStore;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 import util.ConsolePrinter;
-import util.EasyMath;
 import util.SetMath;
 
 public class GeneralELRelaxedInstancesAlgorithm implements
@@ -113,12 +108,14 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		
 		TRACKER.stop(StaticValues.TIME_PREPROCESSING);
 		
-		// iterate over all requested queries
+		/* ******************************************  */
+		/* ******* ITERATING OVER ALL QUERIES ******** */
+		/* ******************************************* */
 		TRACKER.start(StaticValues.TIME_MAIN_ALGO, BlockOutputMode.COMPLETE);
-		for(int i = 1; i <= m_currentSpec.getQueries().size(); i++){
-			LOG.info("start processing query " + i + ": " + m_currentSpec.getQueries().get( i - 1 ));
-			TRACKER.start(StaticValues.TIME_QUERY_BASE + i);
-			OWLClassExpression query = m_currentSpec.getQueries().get( i - 1 );
+		for(int queryIndex = 1; queryIndex <= m_currentSpec.getQueries().size(); queryIndex++){
+			LOG.info("start processing query " + queryIndex + ": " + m_currentSpec.getQueries().get( queryIndex - 1 ));
+			TRACKER.start(StaticValues.TIME_QUERY_BASE + queryIndex);
+			OWLClassExpression query = m_currentSpec.getQueries().get( queryIndex - 1 );
 			Map<Integer, Map<SimilarityValue,Double>> simiDev = new HashMap<Integer, Map<SimilarityValue,Double>>();
 			
 			
@@ -142,7 +139,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				LOG.fine(sb.toString());
 			}
 	
-			LOG.info("Start finding the relaxed instances with greater similarity to " + m_currentSpec.getQueries().get(i - 1)
+			LOG.info("Start finding the relaxed instances with greater similarity to " + m_currentSpec.getQueries().get(queryIndex - 1)
 					+ " than " + m_currentSpec.getThreshold());
 			
 			TRACKER.start(StaticValues.TIME_SIMFACTORY_PREP, BlockOutputMode.COMPLETE);
@@ -169,7 +166,10 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			boolean storeDevelopment = m_currentSpec.getParameters().getOutputs().contains(OutputType.ASCII) ||
 										m_currentSpec.getParameters().getOutputs().contains(OutputType.CSV);
 			m_currentIteration = 0;
-			while(!isDone()){ // do until termination condition fires
+			/* ********************************** */
+			/* ** ITERATIVE MATRIX COMPUTATION ** */
+			/* ********************************** */
+			while(!isDone()){ // do until termination condition is met
 				TRACKER.start(StaticValues.TIME_ITERATION);
 				m_currentIteration++;
 				
@@ -178,20 +178,26 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 					System.out.println(" " + m_currentIteration + " iterations");
 //					LOG.info("iteration: " + m_currentIteration);
 				}
-//				int tasksDone = 0;
-//				long nTTime = 0;
-//				long simTime = 0;
-//				long time1k = 0;
-				while(!m_factory.isPoolEmpty()){ // empty the task pool
-//					long start = System.currentTimeMillis();
-//					long totalStart = start;
-					SimilarityValue v = m_factory.getNextTask();
-//					nTTime += System.currentTimeMillis() - start;
-//					start = System.currentTimeMillis();
-					v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));
-//					simTime += System.currentTimeMillis() - start;
-//					time1k += System.currentTimeMillis() - totalStart;
-//					tasksDone++;
+				
+				// the following loop can be parallelized !
+				int tasksDone = 0;
+				int enter = 0;
+				while(!m_factory.isTaskSetEmpty()){ // twice the loop, if exec thinks it is done when there where still tasks created
+					enter++;
+//				ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+				while(!m_factory.isTaskSetEmpty()){ // empty the task pool
+					final SimilarityValue v = m_factory.getNextTask();
+					if(m_currentIteration == 1){
+						v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));
+					}else{
+//					exec.submit(new Runnable() {
+//						@Override
+//						public void run() {
+							v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));							
+//						}
+//					});
+					}
+					tasksDone++;
 //					if(tasksDone % 1000 == 0){
 //						System.out.println("Tasks: " + tasksDone + " / " + m_factory.getOpenTaskAmount()
 //								+ " total = " + time1k + " ms /"
@@ -200,7 +206,20 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //					}
 	//					factory.printStats();
 				}
-				
+//					if(m_currentIteration == 1){
+//				exec.shutdown();
+//				try {
+////					while(!exec.isTerminated()){
+//						exec.awaitTermination(30, TimeUnit.MINUTES);
+////					}
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+						
+//					}
+				}
+				LOG.info("Had to enter outer loop: " + enter);
+				StatStore.getInstance().enterValue("tasks per iteration query " + queryIndex, tasksDone*1.0);
 				if(LOG.getLevel() == Level.FINE){
 					StringBuilder sb = new StringBuilder();
 					sb.append("Current status of the similarity pools at iteration " + m_currentIteration + ":\n");
@@ -225,15 +244,15 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				}
 			}
 
-			m_answers.put(i, answers);
+			m_answers.put(queryIndex, answers);
 			
-			m_simiDevelopment.put(i, simiDev);
+			m_simiDevelopment.put(queryIndex, simiDev);
 			
 			if(storeDevelopment && (LOG.getLevel().intValue() >= Level.FINE.intValue())){
 				StringBuilder sb = new StringBuilder();
 				sb.append("Development of interesting similarity values:\n");
 				GeneralELOutputGenerator gen = new GeneralELOutputGenerator(this, m_currentSpec);
-				sb.append(gen.renderASCIITable(i));
+				sb.append(gen.renderASCIITable(queryIndex));
 				LOG.info(sb.toString());
 				
 				LOG.info("All the individuals that are not listed in the table above are totally dissimilar. (sim = 0)");
@@ -260,7 +279,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			
 			TRACKER.stop(StaticValues.TIME_FINALIZING_RESULTS);
 			
-			TRACKER.stop(StaticValues.TIME_QUERY_BASE + i);
+			TRACKER.stop(StaticValues.TIME_QUERY_BASE + queryIndex);
 		}
 		TRACKER.stop(StaticValues.TIME_MAIN_ALGO);
 	
@@ -279,14 +298,15 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 						+ weightedSumRoles(p.getElement().getSuccessorObjects())
 						+ weightedSumRoles(q.getElement().getSuccessorObjects()));
 		Set<OWLClass> usedCN = q.getElement().getInstantiators();
-		Set<RoleAssertion> usedSC = q.getElement().getSuccessorObjects(q.getInterpretation());
+		Set<RoleConnection> usedSC = q.getElement().getSuccessorObjects(q.getInterpretation());
 		// iterate over subsets and maximize the similarity
 		Set<OWLClass> pInstantiators = p.getElement().getInstantiators();
-		Set<RoleAssertion> pSuccessors = p.getElement().getSuccessorObjects(p.getInterpretation());
+		Set<RoleConnection> pSuccessors = p.getElement().getSuccessorObjects(p.getInterpretation());
 //		for(Set<OWLClass> qInstantiators : SetMath.getAllSubsets(q.getElement().getInstantiators())){
 //			for(Set<RoleAssertion> qSuccessors : SetMath.getAllSubsets(q.getElement().getSuccessorObjects(q.getInterpretation()))){
 		for(Set<OWLClass> qInstantiators : SetMath.getAllClassSubsetsSmart(pInstantiators, q.getElement().getInstantiators())){
-			for(Set<RoleAssertion> qSuccessors : SetMath.getAllRoleSubsetsSmart(pSuccessors, q.getElement().getSuccessorObjects(q.getInterpretation()))){
+			for(Set<RoleConnection> qSuccessors : SetMath.getAllRoleSubsetsSmart(pSuccessors, q.getElement().getSuccessorObjects(q.getInterpretation()))){
+//			for(Set<RoleConnection> qSuccessors : SetMath.getAllSubsets(q.getElement().getSuccessorObjects(q.getInterpretation()))){
 				double weightedSum = weightedSumClasses(p.getElement().getInstantiators())
 									+ weightedSumClasses(qInstantiators)
 									+ weightedSumRoles(p.getElement().getSuccessorObjects(p.getInterpretation()))
@@ -319,7 +339,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 //			simCNTime = 0;
 //			simSCTime = 0;
 //		}
-//		LOG.fine("Similarity on iteration " + i + " between " + p + " and " + q + " using S_CN = " + usedCN + " and S_SC = " + usedSC + " is " + maxSim);
+		LOG.fine("Similarity on iteration " + i + " between " + p + " and " + q + " using S_CN = " + usedCN + " and S_SC = " + usedSC + " is " + maxSim);
 		return maxSim;
 	}
 	
@@ -342,6 +362,9 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	 */
 	private double simCN(Set<OWLClass> pInstantiators, Set<OWLClass> qInstantiators){
 //		long start = System.currentTimeMillis();
+		if(pInstantiators.iterator().hasNext() && pInstantiators.iterator().next().getIRI().toString().contains("Black")){
+			System.out.println("now");
+		}
 		double sum = 0.0;
 		for(OWLClass a : pInstantiators){
 			double max = 0.0;
@@ -360,15 +383,15 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				q.getElement().getSuccessorObjects(q.getInterpretation()), iterations);
 	}
 	
-	private double simSC(Set<RoleAssertion> pSuccessors, Set<RoleAssertion> qSuccessors, int iterations){
+	private double simSC(Set<RoleConnection> pSuccessors, Set<RoleConnection> qSuccessors, int iterations){
 //		long start = System.currentTimeMillis();
 		double sum = 0.0;
 		double w = m_currentSpec.getDiscountingFactor();
 //		System.out.println(w + " = w -> (w + (1-w)*0) = " + (w + (1 - w) * 0));
 		StatStore.getInstance().enterValue("successor-iterations simSC", pSuccessors.size() * qSuccessors.size() * 1.0);
-		for(RoleAssertion r : pSuccessors){
+		for(RoleConnection r : pSuccessors){
 			double max = 0.0;
-			for(RoleAssertion s : qSuccessors){
+			for(RoleConnection s : qSuccessors){
 				PointedInterpretation pn = r.getToPointedInterpretation();
 				PointedInterpretation qn = s.getToPointedInterpretation();
 				double v = m_currentSpec.getPrimitiveMeasure().similarity(r.getProperty(), s.getProperty());
@@ -394,9 +417,9 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 		return sum;
 	}
 	
-	private double weightedSumRoles(Set<RoleAssertion> successors){
+	private double weightedSumRoles(Set<RoleConnection> successors){
 		double sum = 0.0;
-		for(RoleAssertion r : successors){
+		for(RoleConnection r : successors){
 			sum += m_currentSpec.getWeight(r.getProperty());
 		}
 		return sum;
