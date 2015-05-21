@@ -78,95 +78,112 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 		
 		OWLAxiomFlatteningTransformer restrictions = m_ontologyOperator.getFlatteningTransformer(); // flattens
 		
-		LOG.info("creating " + ontology.getIndividualsInSignature().size() + " individual domain elements");
+		LOG.info("creating " + individuals.size() + " individual domain elements");
 		// can be improved by not iterating all individual domain elements twice
-		for(OWLNamedIndividual ind : ontology.getIndividualsInSignature()){
+		for(OWLNamedIndividual ind : individuals){
 			DomainNode<OWLNamedIndividual> node = m_domain.addDomainElement(ind);
 			addInstantiators(node);
 		}
 		
 		LOG.info("adding direct successors to all domain elements");
 		Map<DomainNode<OWLClassExpression>, Integer> introducedTBoxNodes = new HashMap<DomainNode<OWLClassExpression>, Integer>();
-		for(OWLNamedIndividual ind : individuals){
-			DomainNode<OWLNamedIndividual> node = m_domain.getDomainNode(ind);
-			
-			TRACKER.start(StaticValues.TIME_EXPLICIT_SUCCESSORS, BlockOutputMode.COMPLETE, true);
-			for(OWLObjectPropertyAssertionAxiom ax : ontology.getObjectPropertyAssertionAxioms(ind)){
-				node.addSuccessor(ax.getProperty().asOWLObjectProperty(),
-								  m_domain.getDomainNode(ax.getObject()));
-			}
-			TRACKER.stop(StaticValues.TIME_EXPLICIT_SUCCESSORS);
-			
-			TRACKER.start(StaticValues.TIME_DIRECT_TBOX_SUCCESSORS, BlockOutputMode.COMPLETE, true);
-			Set<OWLClass> removeInstantiators = new HashSet<OWLClass>();
-			for(OWLClass intermediary : node.getInstantiators()){
-				if(restrictions.isIntermediary(intermediary)){
-					removeInstantiators.add(intermediary); // mark intermediaries for removal
-					OWLClassExpression ce = m_ontologyOperator.getDefinition(intermediary);
-					if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
-						OWLObjectSomeValuesFrom some = (OWLObjectSomeValuesFrom)ce;
-						
-						// check for an appropriate individual to use instead of some.filler
-						NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner(true).getInstances(some.getFiller(), false);
-						NodeSet<OWLClass> subClasses = null;
-						Node<OWLClass> eqClasses = null; // will only be initialized and used when m_normalize is true
-						if(m_normalize){
-							subClasses = m_ontologyOperator.getReasoner().getSubClasses(some.getFiller(), false);
-							eqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(some.getFiller());
-						}
-						boolean addSuccessor = true;
-						for(DomainNode<?> n : node.getSuccessors(some.getProperty().asOWLObjectProperty())){
-							// check if an individual exists that can represent the current class
-							if(n.getId() instanceof OWLNamedIndividual){
-								if(instances.containsEntity((OWLNamedIndividual)n.getId())){
-									addSuccessor = false;
-									break;
-								}
-							}
-							// check if another more specific class expression can represent the current class
-							if(m_normalize && n.getId() instanceof OWLClassExpression){
-								OWLClass fillerClass = getClassRepresentation((OWLClassExpression)n.getId());
-								if(subClasses.containsEntity(fillerClass)
-										|| eqClasses.contains(fillerClass)){
-									addSuccessor = false;
-									break;
-								}
-							}
-						}
-						// nothing represents the some.filler, thus create new element and add as successor
-						if(addSuccessor){
+		Set<OWLNamedIndividual> toDo = new HashSet<OWLNamedIndividual>();
+		Set<OWLNamedIndividual> done = new HashSet<OWLNamedIndividual>(individuals);
+		do{
+			for(OWLNamedIndividual ind : individuals){
+				DomainNode<OWLNamedIndividual> node = m_domain.getDomainNode(ind);
+				
+				// adding explicitly set successors through role assertion axioms
+				TRACKER.start(StaticValues.TIME_EXPLICIT_SUCCESSORS, BlockOutputMode.COMPLETE, true);
+				for(OWLObjectPropertyAssertionAxiom ax : ontology.getObjectPropertyAssertionAxioms(ind)){
+					DomainNode<OWLNamedIndividual> suc = null;
+					if((suc = (DomainNode<OWLNamedIndividual>) m_domain.getDomainNode(ax.getObject())) == null){
+						suc = (DomainNode<OWLNamedIndividual>) m_domain.addDomainElement(ax.getObject());
+						addInstantiators(suc);
+					}
+					node.addSuccessor(ax.getProperty().asOWLObjectProperty(),
+									  suc);
+					if(!done.contains(ax.getObject())){
+						toDo.add(ax.getObject().asOWLNamedIndividual());
+					}
+				}
+				TRACKER.stop(StaticValues.TIME_EXPLICIT_SUCCESSORS);
+				
+				TRACKER.start(StaticValues.TIME_DIRECT_TBOX_SUCCESSORS, BlockOutputMode.COMPLETE, true);
+				Set<OWLClass> removeInstantiators = new HashSet<OWLClass>();
+				for(OWLClass intermediary : node.getInstantiators()){
+					if(restrictions.isIntermediary(intermediary)){
+						removeInstantiators.add(intermediary); // mark intermediaries for removal
+						OWLClassExpression ce = m_ontologyOperator.getDefinition(intermediary);
+						if(ce != null && ce instanceof OWLObjectSomeValuesFrom){
+							OWLObjectSomeValuesFrom some = (OWLObjectSomeValuesFrom)ce;
+							
+							// check for an appropriate individual to use instead of some.filler
+							NodeSet<OWLNamedIndividual> instances = m_ontologyOperator.getReasoner(true).getInstances(some.getFiller(), false);
+							NodeSet<OWLClass> subClasses = null;
+							Node<OWLClass> eqClasses = null; // will only be initialized and used when m_normalize is true
 							if(m_normalize){
-								// also remove all more general nodes than this one as successor
-								currentIdSuperClasses = m_ontologyOperator.getReasoner().getSuperClasses(some.getFiller(), false);
-								Set<DomainNode<OWLClassExpression>> removed = removeIncludedSuccessors(some.getProperty().asOWLObjectProperty(), node, some.getFiller());
-								for(DomainNode<OWLClassExpression> rem : removed){
-									if(introducedTBoxNodes.containsKey(rem)){
-										// reduce number of predecessors
-										introducedTBoxNodes.put(rem, introducedTBoxNodes.get(rem) - 1);
-										if(introducedTBoxNodes.get(rem) < 0){
-											LOG.severe("A created domain node has less than 0 predecessors!");
-										}
+								subClasses = m_ontologyOperator.getReasoner().getSubClasses(some.getFiller(), false);
+								eqClasses = m_ontologyOperator.getReasoner().getEquivalentClasses(some.getFiller());
+							}
+							boolean addSuccessor = true;
+							for(DomainNode<?> n : node.getSuccessors(some.getProperty().asOWLObjectProperty())){
+								// check if an individual exists that can represent the current class
+								if(n.getId() instanceof OWLNamedIndividual){
+									if(instances.containsEntity((OWLNamedIndividual)n.getId())){
+										addSuccessor = false;
+										break;
+									}
+								}
+								// check if another more specific class expression can represent the current class
+								if(m_normalize && n.getId() instanceof OWLClassExpression){
+									OWLClass fillerClass = getClassRepresentation((OWLClassExpression)n.getId());
+									if(subClasses.containsEntity(fillerClass)
+											|| eqClasses.contains(fillerClass)){
+										addSuccessor = false;
+										break;
 									}
 								}
 							}
-							
-							DomainNode<OWLClassExpression> succ = m_domain.addDomainElement(some.getFiller());
-							if(!introducedTBoxNodes.containsKey(succ)){ // freshly created
-								introducedTBoxNodes.put(succ, 0);
-								m_tbGenerator.addInstantiators(succ);
+							// nothing represents the some.filler, thus create new element and add as successor
+							if(addSuccessor){
+								if(m_normalize){
+									// also remove all more general nodes than this one as successor
+									currentIdSuperClasses = m_ontologyOperator.getReasoner().getSuperClasses(some.getFiller(), false);
+									Set<DomainNode<OWLClassExpression>> removed = removeIncludedSuccessors(some.getProperty().asOWLObjectProperty(), node, some.getFiller());
+									for(DomainNode<OWLClassExpression> rem : removed){
+										if(introducedTBoxNodes.containsKey(rem)){
+											// reduce number of predecessors
+											introducedTBoxNodes.put(rem, introducedTBoxNodes.get(rem) - 1);
+											if(introducedTBoxNodes.get(rem) < 0){
+												LOG.severe("A created domain node has less than 0 predecessors!");
+											}
+										}
+									}
+								}
+								
+								DomainNode<OWLClassExpression> succ = m_domain.addDomainElement(some.getFiller());
+								if(!introducedTBoxNodes.containsKey(succ)){ // freshly created
+									introducedTBoxNodes.put(succ, 0);
+									m_tbGenerator.addInstantiators(succ);
+								}
+								// increase number of predecessors
+								introducedTBoxNodes.put(succ, introducedTBoxNodes.get(succ) + 1);
+								node.addSuccessor(some.getProperty().asOWLObjectProperty(), succ);
 							}
-							// increase number of predecessors
-							introducedTBoxNodes.put(succ, introducedTBoxNodes.get(succ) + 1);
-							node.addSuccessor(some.getProperty().asOWLObjectProperty(), succ);
 						}
+					}else if(isRestrictedInstantiator(intermediary)){ // still remove all other restricted instantiators
+						removeInstantiators.add(intermediary);
 					}
-				}else if(isRestrictedInstantiator(intermediary)){ // still remove all other restricted instantiators
-					removeInstantiators.add(intermediary);
 				}
+				node.removeInstantiators(removeInstantiators);
+				TRACKER.stop(StaticValues.TIME_DIRECT_TBOX_SUCCESSORS);
+				
+				done.add(ind); // this is done now
 			}
-			node.removeInstantiators(removeInstantiators);
-			TRACKER.stop(StaticValues.TIME_DIRECT_TBOX_SUCCESSORS);
-		}
+			individuals = toDo;
+			toDo = new HashSet<OWLNamedIndividual>();
+		}while(!individuals.isEmpty());
 		/* at this point all individuals have a domain element which is connected to other individual
 		 * domain elements via the explicit role-assertions and to all necessary (i.e. no appropriate instance existed) 
 		 * TBox "filler"-concepts.

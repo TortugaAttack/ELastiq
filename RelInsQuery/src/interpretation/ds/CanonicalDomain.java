@@ -8,6 +8,7 @@ import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
+import org.semanticweb.owlapi.util.ShortFormProvider;
 
 public class CanonicalDomain implements IDomain {
 
@@ -20,6 +21,8 @@ public class CanonicalDomain implements IDomain {
 	 * Stores domain elements associated with individuals.
 	 */
 	private Map<OWLNamedIndividual, DomainNode<OWLNamedIndividual>> m_individualElements;
+
+	private ShortFormProvider m_shortFormProvider;
 	
 	public CanonicalDomain() {
 		m_conceptElements = new HashMap<OWLClassExpression, DomainNode<OWLClassExpression>>();
@@ -115,5 +118,9 @@ public class CanonicalDomain implements IDomain {
 
 	public Integer size() {
 		return m_individualElements.size() + m_conceptElements.size();
+	}
+	
+	public void setShortFormProvider(ShortFormProvider shortFormProvider) {
+		this.m_shortFormProvider = shortFormProvider;
 	}
 }
