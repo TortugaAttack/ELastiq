@@ -179,6 +179,8 @@ public class IterativeKBInterpretationGenerator extends CanonicalInterpretationG
 				node.removeInstantiators(removeInstantiators);
 				TRACKER.stop(StaticValues.TIME_DIRECT_TBOX_SUCCESSORS);
 				
+				StatStore.getInstance().enterValue("successors of domain elements", node.getSuccessorObjects().size()*1.0);
+				
 				done.add(ind); // this is done now
 			}
 			individuals = toDo;

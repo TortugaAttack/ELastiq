@@ -55,6 +55,9 @@ public class Main {
 		GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
 		if(INPUT != null)
 			gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
+		
+//		Exception ex = new Exception();
+//		ex.printStackTrace();
 	}
 	
 	public static void main(String[] args) {

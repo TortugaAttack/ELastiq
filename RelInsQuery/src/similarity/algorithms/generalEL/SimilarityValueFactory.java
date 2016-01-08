@@ -18,7 +18,11 @@ public class SimilarityValueFactory {
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 	
 	private Set<SimilarityValue> m_tasks;
+	
+	public int maxSimTasks;
 
+	public static int countNextTaskCalls;
+	
 	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_pool;
 	
 //	private Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>> m_upToDate;
@@ -40,7 +44,6 @@ public class SimilarityValueFactory {
 //		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 		m_tasks = new HashSet<SimilarityValue>();
 		m_valuesOfInterest = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
-		
 //		workingKeys = new HashSet<PointedInterpretation>();
 //		workingKeyPair = new HashMap<PointedInterpretation, Set<PointedInterpretation>>();
 	}
@@ -63,6 +66,7 @@ public class SimilarityValueFactory {
 //	public long time2 = 0;
 //	public long time3 = 0;
 	public SimilarityValue getSimilarityValue(PointedInterpretation p, PointedInterpretation q, int i){
+		String str = "Asking for "+p+" with "+q+" in iter. "+i;
 //		calls++;
 //		long start = System.currentTimeMillis();
 //		Set<Map<PointedInterpretation, Map<PointedInterpretation, SimilarityValue>>> searchSpaces 
@@ -78,6 +82,7 @@ public class SimilarityValueFactory {
 			if(m_pool.containsKey(p)){
 				if(m_pool.get(p).containsKey(q)){
 //					time2 += System.currentTimeMillis() - start;
+//					LOG.info(str + " FOUND");
 					return m_pool.get(p).get(q);
 				}
 			}
@@ -85,6 +90,7 @@ public class SimilarityValueFactory {
 			if(m_pool.containsKey(q)){
 				if(m_pool.get(q).containsKey(p)){
 //					time2 += System.currentTimeMillis() - start;
+//					LOG.info(str + " FOUND");
 					return m_pool.get(q).get(p);
 				}
 			}
@@ -114,6 +120,8 @@ public class SimilarityValueFactory {
 		// nothing found in searchSpaces
 		if(i == 0){ // create new value and put it in pool
 			SimilarityValue ret = initializeSimilarityValue(p, q);
+			maxSimTasks++;
+//			LOG.info(str + " CREATED");
 //			time3 += System.currentTimeMillis() - start;
 			return ret;
 		}
@@ -178,6 +186,7 @@ public class SimilarityValueFactory {
 					m_tasks.add(m_pool.get(p1).get(p2));
 				}
 			}
+			countNextTaskCalls = 0;
 		}
 	}
 	
@@ -228,14 +237,21 @@ public class SimilarityValueFactory {
 //		}
 //		System.err.println("No next task to compute.");
 //		return null; // not supposed to happen..
+		countNextTaskCalls++;
+//		if(countNextTaskCalls % 1000 == 0){
+//			System.out.print(m_tasks.size()+"/"+maxSimTasks+" tasks left");
+//		}
 		if(!m_tasks.isEmpty()){
 			Iterator<SimilarityValue> it = m_tasks.iterator();
 			if(it.hasNext()){
 				SimilarityValue ret = it.next();
 				it.remove(); // immediately remove it as task
+//				System.out.println(ret);
+//				System.out.println(" and after returning: "+m_tasks.size()+"/"+maxSimTasks+" tasks left");
 				return ret;
 			}
 		}
+		System.out.println("I returned null. (getNextTask)");
 		return null;
 	}
 	
@@ -271,6 +287,8 @@ public class SimilarityValueFactory {
 		m_valuesOfInterest = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 		m_pool = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 		m_tasks = new HashSet<SimilarityValue>();
+		maxSimTasks = 0;
+		countNextTaskCalls = 0;
 //		m_upToDate = new HashMap<PointedInterpretation, Map<PointedInterpretation,SimilarityValue>>();
 	}
 	

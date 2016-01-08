@@ -49,11 +49,13 @@ smallModel:true
 normalizing:2
 # the weight all entities without explicit weight get (DEFAULT: 1)
 baseWeight:1
-# either give iterations or precision, if both found, first one is respected, if none found, default behaviour
-# fixed number of iterations of main procedure (NOT DEFAULT METHOD)
-# iterations:500
+# either give iterations or precision or topk, if more than one found, first one is respected, if none found, default behaviour is precision
+# fixed number of iterations of main procedure
+#iterations:500
 # OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
-precision:0.01
+#precision:0.01
+# OR give the amount of answers you want, a very low precision termination is used and the answer set is cropped to the given amount
+topk:3
 # specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)

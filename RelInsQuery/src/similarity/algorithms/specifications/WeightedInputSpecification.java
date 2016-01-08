@@ -145,6 +145,10 @@ public class WeightedInputSpecification extends BasicInputSpecification {
 			m_terminationValue = Math.floor(value);
 			if(m_terminationValue == 0) LOG.warning("With this termination specification computation will stop after 0 iterations.");
 			break;
+		case TOPK :
+			m_terminationValue = Math.floor(value);
+			if(m_terminationValue == 0) LOG.warning("Okay, I will calculate all similarities but give you 0 answers.");
+			break;
 		default : break; // maybe null case would end up here?
 		}
 	}

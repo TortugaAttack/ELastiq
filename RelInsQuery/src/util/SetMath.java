@@ -17,6 +17,7 @@ import org.semanticweb.owlapi.model.OWLEntity;
 
 import similarity.algorithms.generalEL.GeneralELRelaxedInstancesAlgorithm;
 import similarity.algorithms.specifications.WeightedInputSpecification;
+import statistics.StatStore;
 
 public class SetMath {
 
@@ -85,11 +86,15 @@ public class SetMath {
 			for(RoleConnection investigate : set){
 				/*if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) == 1){
 					mustBase.add(investigate);
-				}else */if(spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty()) > 0){
+				}else */
+				double pSim = spec.getPrimitiveMeasure().similarity(ref.getProperty(), investigate.getProperty());
+				StatStore.getInstance().enterValue("primitive role similarity", pSim);
+				if(pSim > 0){
 					variationBase.add(investigate);
 				}// otherwise, leave definitely out
 			}
 		}
+//		System.out.print(" (|varbase|="+variationBase.size()+") ");
 		Set<Set<RoleConnection>> allSets = new HashSet<Set<RoleConnection>>();
 		for(Set<RoleConnection> s : getAllSubsets(variationBase)){
 //			s.addAll(mustBase);

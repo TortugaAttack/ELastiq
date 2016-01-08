@@ -7,7 +7,10 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
+
+import statistics.StatStore;
 
 /**
  * Generic type DomainNode, identification of domain nodes may vary between use-cases.
@@ -56,7 +59,13 @@ public class DomainNode<T> {
 		if(!m_successors.containsKey(r)){
 			m_successors.put(r, new HashSet<DomainNode<?>>());
 		}
-		return m_successors.get(r).add(d);
+		boolean ret = m_successors.get(r).add(d);
+		if(m_id instanceof OWLClassExpression){
+			StatStore.getInstance().enterValue("successors added for CE domNode", m_successors.get(r).size()*1.0);
+		}else{
+			StatStore.getInstance().enterValue("successors added for ind domNode", m_successors.get(r).size()*1.0);
+		}
+		return ret;
 	}
 	
 	public void removeSuccessor(OWLObjectProperty r, DomainNode<?> d){
@@ -124,7 +133,7 @@ public class DomainNode<T> {
 				successors.add(new RoleConnection(this, to, r, c));
 			}
 		}
-		
+		StatStore.getInstance().enterValue("successor set sizes ever returned", successors.size()*1.0);
 		return successors;
 	}
 	
@@ -134,6 +143,11 @@ public class DomainNode<T> {
 	
 	public String toShortString(){
 		return "d(" + m_id.toString() + ")";
+	}
+	
+	@Override
+	public int hashCode() {
+		return m_id.hashCode();
 	}
 	
 	@Override

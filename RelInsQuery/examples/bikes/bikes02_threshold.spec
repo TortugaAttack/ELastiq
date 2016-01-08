@@ -7,7 +7,7 @@
 # relative path will be seen relative to the java runtime execution path
 # ontology block has to be specified before [query] [weights] and [measure] if PRIMITIVE is selected and explicit similarities are set
 [ontology]
-bikes.owl
+examples/bikes/bikes.owl
 
 # the query
 # currently only manchester owl class expression format supported
@@ -48,9 +48,11 @@ normalizing:2
 baseWeight:1
 # either give iterations or precision, if both found, first one is respected, if none found, default behaviour
 # fixed number of iterations of main procedure (NOT DEFAULT METHOD)
-# iterations:500
+#iterations:500
 # OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
-precision:0.01
+#precision:0.01
+# OR give the amount of results you want to have at most (computation will still be interrupted by the precision method, but answers are cropped)
+topk:2
 # specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
