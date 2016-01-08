@@ -298,7 +298,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 	private double similarity(PointedInterpretation p, PointedInterpretation q, int i){
 //		System.out.print("Calculating similarity... ");
 //		calls++;
-		Set<RoleConnection> pSucc = p.getElement().getSuccessorObjects();
+		Set<RoleConnection> pSucc = p.getElement().getSuccessorObjects(p.getInterpretation());
 		Set<RoleConnection> qSucc = p.getElement().getSuccessorObjects();
 		Set<RoleConnection> qSuccInt = q.getElement().getSuccessorObjects(q.getInterpretation());
 		double maxSim = (simCN(p, q) + simCN(q, p) + simSC(p, q, i) + simSC(q, p, i))
@@ -306,7 +306,7 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 						(weightedSumClasses(p.getElement().getInstantiators())
 						+ weightedSumClasses(q.getElement().getInstantiators())
 						+ weightedSumRoles(pSucc)
-						+ weightedSumRoles(qSucc));
+						+ weightedSumRoles(qSuccInt));
 //		System.out.print("has initial maxSim... ");
 		Set<OWLClass> usedCN = q.getElement().getInstantiators();
 		Set<RoleConnection> usedSC = qSuccInt;
