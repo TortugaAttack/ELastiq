@@ -1,1 +1,1 @@
-This will become a query answering tool for ontologies using certain relaxations for queries.
+ELastiq is an instance query answering tool for general EL ontologies that is capable of finding answers in a relaxed way.
