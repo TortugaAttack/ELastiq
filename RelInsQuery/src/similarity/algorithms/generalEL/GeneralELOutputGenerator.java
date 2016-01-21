@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -74,8 +75,7 @@ public class GeneralELOutputGenerator {
 		StringBuilder sb = new StringBuilder();
 		List<OWLClassExpression> queries = m_specification.getQueries();
 		for(int query : m_algorithm.getAnswers().keySet()){
-			sb.append("Query " + query + ": " + queries.get(query-1) + "\n" +
-					m_algorithm.getAnswers().get(query).size() + " answers:\n");
+			sb.append("Query " + query + ": " + queries.get(query-1) + "\n");
 			sb.append(renderInstanceList(m_algorithm.getAnswers().get(query)));
 		}
 		return sb.toString();
@@ -92,6 +92,10 @@ public class GeneralELOutputGenerator {
 	public String renderInstanceList(final Map<OWLNamedIndividual, Double> instances, boolean ascending){
 		List<OWLNamedIndividual> sorted = getSortedAnswers(instances, ascending);
 		StringBuilder sb = new StringBuilder();
+		sb.append(sorted.size() + " answers");
+		if(m_specification.isTopK() && m_specification.getThreshold() < sorted.size())
+			sb.append(" (additional results with the same similarity as answer "+(int)m_specification.getThreshold()+" are included)");
+		sb.append(":\n");
 		for(OWLNamedIndividual ind : sorted){
 			sb.append(ind.toString() + "\t" + "similarity: " + EasyMath.round(instances.get(ind), 
 					(Integer)m_specification.getParameters().getValue(GeneralParameters.DECIMAL_ACCURACY)) + "\n");
@@ -241,6 +245,23 @@ public class GeneralELOutputGenerator {
 		
 		if(ascending)
 			Collections.reverse(sorted);
+		
+		if(m_specification.isTopK()){
+			Iterator<T> it = sorted.iterator();
+			int count = 0;
+			double lastSim = 0;
+			boolean removeNow = false;
+			while(it.hasNext()){
+				count++;
+				T cur = it.next();
+				if(removeNow || (count > m_specification.getThreshold() && lastSim > instances.get(cur))){
+					removeNow = true;
+					it.remove();
+				}else{
+					lastSim = instances.get(cur);
+				}
+			}
+		}
 		
 		return sorted;
 	}

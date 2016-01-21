@@ -37,9 +37,11 @@ DEFAULT
 # A:C:0.5
 # r:s:0.8
 
-# simply the threshold value for accepting relaxed instances
+# either the similarity threshold for accepting relaxed instances (double)
+# or a topk specification so that the best k results are returned regardless of their similarity (top[int])
 [threshold]
 0.01
+#top10
 
 # a generic and optional list of key-value pairs altering the behaviour of the application
 [parameters]
@@ -53,9 +55,7 @@ baseWeight:1
 # fixed number of iterations of main procedure
 #iterations:500
 # OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
-#precision:0.01
-# OR give the amount of answers you want, a very low precision termination is used and the answer set is cropped to the given amount
-topk:3
+precision:0.01
 # specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)

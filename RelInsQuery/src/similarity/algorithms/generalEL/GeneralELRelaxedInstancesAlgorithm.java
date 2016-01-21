@@ -138,9 +138,12 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				sb.append(StaticValues.SEPERATOR);
 				LOG.fine(sb.toString());
 			}
-	
-			LOG.info("Start finding the relaxed instances with greater similarity to " + m_currentSpec.getQueries().get(queryIndex - 1)
+			if(m_currentSpec.isTopK()){
+				LOG.info("Start finding the best "+m_currentSpec.getThreshold()+" relaxed instances for the query " + m_currentSpec.getQueries().get(queryIndex - 1));
+			}else{
+				LOG.info("Start finding the relaxed instances with greater similarity to " + m_currentSpec.getQueries().get(queryIndex - 1)
 					+ " than " + m_currentSpec.getThreshold());
+			}
 			
 			TRACKER.start(StaticValues.TIME_SIMFACTORY_PREP, BlockOutputMode.COMPLETE);
 			// now compute relaxed instances
@@ -233,20 +236,13 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				TRACKER.stop(StaticValues.TIME_ITERATION);
 			}
 			// main algorithm done, collect result sets (and print ?!)
-			System.out.println("SPEC TERMINATION:"+m_currentSpec.getTerminationValue());
 			TRACKER.start(StaticValues.TIME_FINALIZING_RESULTS, BlockOutputMode.COMPLETE);
 			Map<OWLNamedIndividual, Double> answers = new HashMap<OWLNamedIndividual, Double>();
 			for(PointedInterpretation p : m_factory.getValuesOfInterest().keySet()){
 				for(SimilarityValue v : m_factory.getValuesOfInterest().get(p).values()){
-					if(v.getValue(m_currentIteration) >= m_currentSpec.getThreshold()){
+					if(m_currentSpec.isTopK() || v.getValue(m_currentIteration) >= m_currentSpec.getThreshold()){
 						answers.put((OWLNamedIndividual)v.getP2().getElement().getId(), v.getValue(m_currentIteration));
 					}
-					if(m_currentSpec.getTerminationMethod() == TerminationMethod.TOPK && answers.size() >= m_currentSpec.getTerminationValue()){
-						break;
-					}
-				}
-				if(m_currentSpec.getTerminationMethod() == TerminationMethod.TOPK && answers.size() >= m_currentSpec.getTerminationValue()){
-					break;
 				}
 			}
 

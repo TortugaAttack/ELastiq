@@ -33,7 +33,6 @@ public class WeightedInputSpecificationParser {
 	private static final String PAR_BASE_WEIGHT = "baseWeight";
 	private static final String PAR_ITERATIONS  = "iterations";
 	private static final String PAR_PRECISION   = "precision";
-	private static final String PAR_TOPK   = "topk";
 	private static final String PAR_ACCURACY    = "accuracy";
 	private static final String PAR_LOG_LEVEL   = "log";
 	private static final String PAR_OUT_DIR   = "output";
@@ -150,6 +149,10 @@ public class WeightedInputSpecificationParser {
 							break;
 						}
 					case THRESHOLD :
+						if(line.contains("top")){
+							line = line.replace("top", "");
+							m_result.setTopFlag(true);
+						}
 						m_result.setThreshold(Double.parseDouble(line));
 						return br.readLine();
 					case PARAMETERS :
@@ -225,10 +228,6 @@ public class WeightedInputSpecificationParser {
 				terminationMethodAlreadySet = true;
 			}else if(key.equals(PAR_PRECISION) && !terminationMethodAlreadySet){
 				m_result.setTerminationMethod(TerminationMethod.RELATIVE, Double.parseDouble(value));
-				terminationMethodAlreadySet = true;
-			}else if(key.equals(PAR_TOPK) && !terminationMethodAlreadySet){
-				System.out.println("I FOUND THE TOPK THING");
-				m_result.setTerminationMethod(TerminationMethod.TOPK, Integer.parseInt(value));
 				terminationMethodAlreadySet = true;
 			}else if(key.equals(PAR_ACCURACY)){
 				parameters.enterValue(GeneralParameters.DECIMAL_ACCURACY, Integer.parseInt(value));

@@ -34,6 +34,7 @@ public class BasicInputSpecification implements IInputSpecification {
 	private OWLOntology m_ontology;
 	
 	private double m_threshold;
+	private boolean m_topFlag;
 	
 	protected EntityWeightingFunction m_weightingFunction;
 
@@ -51,6 +52,7 @@ public class BasicInputSpecification implements IInputSpecification {
 		m_weightingFunction = new EntityWeightingFunction();
 		
 		m_threshold = 1.0;
+		m_topFlag = false;
 		
 		m_parameters = new GeneralParameters();
 	}
@@ -77,8 +79,8 @@ public class BasicInputSpecification implements IInputSpecification {
 			return false;
 		}
 		
-		if(m_threshold <= 0 || m_threshold > 1){
-			System.err.println("Threshold must be in (0,1]");
+		if(m_threshold <= 0 || (m_threshold > 1 && !m_topFlag)){
+			System.err.println("Threshold must be in (0,1] or TopK > 0");
 			return false;
 		}
 		
@@ -123,6 +125,10 @@ public class BasicInputSpecification implements IInputSpecification {
 		this.m_threshold = threshold;
 	}
 	
+	public void setTopFlag(boolean flag){
+		this.m_topFlag = flag;
+	}
+	
 	/* ********* getters ******** */
 	public SymmetricPrimitiveEntitySimilarityMeasure getPrimitiveMeasure(){
 		return m_primitiveMeasure;
@@ -138,6 +144,10 @@ public class BasicInputSpecification implements IInputSpecification {
 	
 	public double getThreshold(){
 		return m_threshold;
+	}
+	
+	public boolean isTopK(){
+		return m_topFlag;
 	}
 	
 	public GeneralParameters getParameters(){

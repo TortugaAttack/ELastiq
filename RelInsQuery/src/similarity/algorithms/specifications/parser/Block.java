@@ -14,7 +14,8 @@ public enum Block {
 					+ StaticValues.ENTITY_REGEX + ":"
 					+ StaticValues.ENTITY_REGEX + ":" 
 					+ StaticValues.DOUBLE_0_1_REGEX + ")"),
-	THRESHOLD("threshold", StaticValues.DOUBLE_0_1_REGEX),
+	THRESHOLD("threshold", "(" + StaticValues.DOUBLE_0_1_REGEX + "|"
+					+ "top" + StaticValues.INT_REGEX + ")"),
 	PARAMETERS("parameters", "[^:]*:[^:]*"),
 	OUTPUT("output", "(ASCII|CSV|INSTANCES|STATISTICS|TIMES)");
 	
