@@ -80,6 +80,11 @@ public class DomainNode<T> {
 		return m_instantiators;
 	}
 	
+	public OWLClass[] getInstantiatorsArray() {
+		OWLClass[] ret = new OWLClass[m_instantiators.size()];
+		return m_instantiators.toArray(ret);
+	}
+	
 	public Set<OWLObjectProperty> getSuccessorRoles(){
 		return m_successors.keySet();
 	}
@@ -135,6 +140,22 @@ public class DomainNode<T> {
 		}
 		StatStore.getInstance().enterValue("successor set sizes ever returned", successors.size()*1.0);
 		return successors;
+	}
+	
+	public RoleConnection[] getSuccessorObjectsArray(CanonicalInterpretation c){
+		int amount = 0;
+		for(OWLObjectProperty r : m_successors.keySet()){
+			amount += m_successors.get(r).size();
+		}
+		RoleConnection[] ret = new RoleConnection[amount];
+		int i = 0;
+		for(OWLObjectProperty r : m_successors.keySet()){
+			for(DomainNode<?> to : m_successors.get(r)){
+				ret[i++] = new RoleConnection(this, to, r, c);
+			}
+		}
+
+		return ret;
 	}
 	
 	public T getId(){

@@ -38,6 +38,7 @@ import similarity.algorithms.specifications.BasicInputSpecification;
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import similarity.algorithms.specifications.TerminationMethod;
+import similarity.measures.PointedISM;
 import statistics.StatStore;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
@@ -78,6 +79,8 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			m_specChanged = true;
 			m_currentSpec = specification;
 		}
+		
+		PointedISM measure = new PointedISM(specification, this);
 		
 		m_simiDevelopment = new HashMap<Integer, Map<Integer, Map<SimilarityValue,Double>>>();
 		m_answers = new HashMap<Integer, Map<OWLNamedIndividual,Double>>();
@@ -190,7 +193,12 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 				while(!m_factory.isTaskSetEmpty()){ // empty the task pool
 					SimilarityValue v = m_factory.getNextTask();
 //					if(m_currentIteration == 1){
-						v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));
+					
+					
+//						v.setNewValue(similarity(v.getP1(), v.getP2(), m_currentIteration));
+						
+						v.setNewValue(measure.similarity(v.getP1(), v.getP2()));
+						
 //					}else{
 //					exec.submit(new Runnable() {
 //						@Override
@@ -551,6 +559,10 @@ public class GeneralELRelaxedInstancesAlgorithm implements
 			return Collections.emptyMap();
 		}
 		return m_answers;
+	}
+	
+	public int getCurrentIteration(){
+		return m_currentIteration;
 	}
 	
 	private static PointedInterpretation getFix1(){
