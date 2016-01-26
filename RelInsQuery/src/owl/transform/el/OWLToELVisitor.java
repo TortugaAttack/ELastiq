@@ -3,7 +3,6 @@ package owl.transform.el;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;

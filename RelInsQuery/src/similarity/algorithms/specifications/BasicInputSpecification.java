@@ -3,24 +3,17 @@ package similarity.algorithms.specifications;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
-import javax.jws.soap.SOAPBinding.ParameterStyle;
-
-import main.Main;
-import main.StaticValues;
-
 import org.semanticweb.owlapi.io.OWLParserException;
-import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-
+import main.Main;
+import main.StaticValues;
 import owl.io.OWLOntologyLoader;
 import owl.io.OWLQueryParser;
-
 import similarity.EntityWeightingFunction;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
 import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;

@@ -1,6 +1,5 @@
 package interpretation.ds;
 
-import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.util.ShortFormProvider;
 
 /**
@@ -61,7 +60,7 @@ public class CanonicalInterpretation {
 		return this.m_name;
 	}
 	
-	public void setDhortFormProvider(ShortFormProvider shortFormProvider) {
+	public void setShortFormProvider(ShortFormProvider shortFormProvider) {
 		this.m_shortFormProvider = shortFormProvider;
 		m_domain.setShortFormProvider(m_shortFormProvider);
 	}

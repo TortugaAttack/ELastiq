@@ -2,22 +2,17 @@ package interpretation.generator;
 
 import java.util.Iterator;
 
-import interpretation.ds.CanonicalDomain;
-import interpretation.ds.DomainNode;
-
-import main.StaticValues;
-
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
-import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
+import interpretation.ds.DomainNode;
+import main.StaticValues;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 import util.EasyMath;

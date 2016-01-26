@@ -1,12 +1,8 @@
 package interpretation.generator;
 
-import interpretation.ds.DomainNode;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
-import main.StaticValues;
 
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
@@ -15,6 +11,8 @@ import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
+import interpretation.ds.DomainNode;
+import main.StaticValues;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
 /**

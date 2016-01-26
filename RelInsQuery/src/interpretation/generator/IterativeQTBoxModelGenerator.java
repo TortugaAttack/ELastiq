@@ -1,28 +1,11 @@
 package interpretation.generator;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import interpretation.ds.CanonicalDomain;
-import interpretation.ds.CanonicalInterpretation;
-import interpretation.ds.DomainNode;
-
-import main.Main;
-import main.StaticValues;
-
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObject;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -30,6 +13,10 @@ import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
+import interpretation.ds.CanonicalDomain;
+import interpretation.ds.CanonicalInterpretation;
+import interpretation.ds.DomainNode;
+import main.StaticValues;
 import owl.OntologyOperator;
 import statistics.StatStore;
 import tracker.BlockOutputMode;
@@ -38,7 +25,6 @@ import tracker.TimeTracker;
 public class IterativeQTBoxModelGenerator extends CanonicalInterpretationGenerator{
 	
 	private static final TimeTracker TRACKER = TimeTracker.getInstance();
-	private static final String LOCAL_LOGGER_NAME = "QTBox-Generator-Logger";
 	
 	private Set<OWLClassExpression> multiAccessTracker;
 	private int needlessAccesses;

@@ -1,34 +1,25 @@
 package main;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import main.log.BasicLogFormatter;
-import main.log.CustomConsoleHandler;
-
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.PatternLayout;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.io.OWLFunctionalSyntaxOntologyFormat;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.profiles.OWLProfileReport;
 import org.semanticweb.owlapi.profiles.OWLProfileViolation;
 
-import owl.io.OWLOntologyLoader;
-import owl.transform.el.OWLToELTransformer;
-
+import main.log.BasicLogFormatter;
+import main.log.CustomConsoleHandler;
 import similarity.algorithms.generalEL.GeneralELOutputGenerator;
 import similarity.algorithms.generalEL.GeneralELRelaxedInstancesAlgorithm;
 import similarity.algorithms.specifications.BasicInputSpecification;
@@ -39,7 +30,6 @@ import similarity.algorithms.specifications.parser.WeightedInputSpecificationPar
 import statistics.StatStore;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;
-import util.EasyTimes;
 
 public class Main {	
 	
@@ -55,46 +45,10 @@ public class Main {
 		GeneralELOutputGenerator gen = new GeneralELOutputGenerator(null, INPUT);
 		if(INPUT != null)
 			gen.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
-		
-//		Exception ex = new Exception();
-//		ex.printStackTrace();
 	}
 	
 	public static void main(String[] args) {
 		
-		/* *** TESTING STUFF **** */
-//		if(args.length < 1){
-//			System.err.println("No ontology file given.");
-//			System.exit(1);
-//		}
-//		
-//		File dir = new File(args[0]);
-//		System.out.println("Searching " + dir.getPath());
-//		
-//		for(File f : dir.listFiles(new FilenameFilter() {
-//			@Override
-//			public boolean accept(File dir, String name) {
-//				return name.endsWith(".owl");
-//			}
-//		})){
-//			System.out.println("Handling " + f.getName());
-//
-//			OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-//			OWLOntologyLoader l = new OWLOntologyLoader(man);
-//			OWLOntology o = l.load(f);
-//			if(o != null){
-//			OWLToELTransformer t = new OWLToELTransformer();
-//			t.transform(o);
-//			
-//			File out = new File(dir.getPath() + "/" + f.getName());
-//			System.out.println("Saving to " + out.getPath());
-//			l.save(out, o, new OWLFunctionalSyntaxOntologyFormat());
-//			
-//			man.removeOntology(o);
-//			}
-//		}	
-//		System.exit(1);
-		/* *** TEST DONE **** */
 		Thread hook = new Thread(){
 			@Override
 			public void run() {
@@ -133,9 +87,6 @@ public class Main {
 		StatStore.getInstance().enterValue("Concept-Names", INPUT.getOntology().getClassesInSignature(true).size() * 1.0);
 		StatStore.getInstance().enterValue("Roles", INPUT.getOntology().getObjectPropertiesInSignature(true).size() * 1.0);
 		StatStore.getInstance().enterValue("Individuals", INPUT.getOntology().getIndividualsInSignature(true).size() * 1.0);
-//		OWLOntologyLoader loader = new OWLOntologyLoader(INPUT.getOntology().getOWLOntologyManager());
-//		loader.save(new File("examples/snomed2010a_alt.ofn"), INPUT.getOntology(), new OWLFunctionalSyntaxOntologyFormat());
-//		System.exit(1);
 		
 		// setup logging (after spec-parsing, log-level may depend on specification
 		String logFile = ((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR)).getAbsolutePath();
@@ -195,7 +146,7 @@ public class Main {
 		
 		outGenerator.storeOutputs((File)INPUT.getParameters().getValue(GeneralParameters.OUT_DIR));
 		
-		Runtime.getRuntime().removeShutdownHook(hook);
+		Runtime.getRuntime().removeShutdownHook(hook); // last thing, omit printing output multiple times
 	}
 	
 	private static void setupLogging(String logFile, Level level){
@@ -204,8 +155,6 @@ public class Main {
 		log.setLevel(level);
 		log.setUseParentHandlers(false);
 		
-//		ConsoleHandler consoleLogHandler = new ConsoleHandler();
-//		consoleLogHandler.setFormatter(new BasicLogFormatter(true));
 		CustomConsoleHandler consoleLogHandler = new CustomConsoleHandler();
 		consoleLogHandler.setLevel(level);
 		log.addHandler(consoleLogHandler);

@@ -2,26 +2,21 @@ package similarity.algorithms.specifications.parser;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import main.StaticValues;
-
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;
 import similarity.algorithms.specifications.TerminationMethod;
 import similarity.algorithms.specifications.WeightedInputSpecification;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
-import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
 import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;
 
 public class WeightedInputSpecificationParser {
@@ -41,8 +36,6 @@ public class WeightedInputSpecificationParser {
 	
 	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 	
-	private Map<Block, List<String>> m_blockContent;
-	
 	private File m_input;
 	
 	private WeightedInputSpecification m_result;
@@ -54,7 +47,6 @@ public class WeightedInputSpecificationParser {
 	public WeightedInputSpecificationParser(File f) {
 		m_input = f;
 		
-		m_blockContent = new HashMap<Block, List<String>>();
 		m_errors = new ArrayList<String>();
 		m_fatal = false;
 		

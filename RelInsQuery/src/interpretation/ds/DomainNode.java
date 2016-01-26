@@ -121,6 +121,7 @@ public class DomainNode<T> {
 	 * Compile RoleConnection set for all role successors without a pointed interpretation.
 	 * @return
 	 */
+	@Deprecated
 	public Set<RoleConnection> getSuccessorObjects(){
 		return getSuccessorObjects((CanonicalInterpretation)null);
 	}
@@ -131,6 +132,7 @@ public class DomainNode<T> {
 	 * @param c
 	 * @return
 	 */
+	@Deprecated
 	public Set<RoleConnection> getSuccessorObjects(CanonicalInterpretation c){
 		Set<RoleConnection> successors = new HashSet<RoleConnection>();
 		for(OWLObjectProperty r : m_successors.keySet()){

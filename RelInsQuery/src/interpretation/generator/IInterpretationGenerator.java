@@ -6,9 +6,6 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import owl.OntologyOperator;
-
-import interpretation.ds.IDomain;
 import interpretation.ds.CanonicalInterpretation;
 
 public interface IInterpretationGenerator {

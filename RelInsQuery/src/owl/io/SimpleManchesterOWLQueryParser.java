@@ -1,10 +1,5 @@
 package owl.io;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import main.Main;
-
 import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser;
 import org.semanticweb.owlapi.expression.OWLEntityChecker;
 import org.semanticweb.owlapi.expression.ShortFormEntityChecker;
@@ -12,7 +7,8 @@ import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.util.BidirectionalShortFormProviderAdapter;
-import org.semanticweb.owlapi.util.SimpleShortFormProvider;
+
+import main.Main;
 
 
 public class SimpleManchesterOWLQueryParser extends OWLQueryParser {

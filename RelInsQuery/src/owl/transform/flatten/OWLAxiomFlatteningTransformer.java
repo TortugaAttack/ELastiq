@@ -3,14 +3,13 @@ package owl.transform.flatten;
 import java.util.HashSet;
 import java.util.Set;
 
-import main.Main;
-import main.StaticValues;
-
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
 
+import main.Main;
+import main.StaticValues;
 import owl.transform.OWLOntologyTransformer;
 import tracker.BlockOutputMode;
 import tracker.TimeTracker;

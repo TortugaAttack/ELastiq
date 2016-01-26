@@ -1,27 +1,21 @@
 package owl;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import main.StaticValues;
 
 import org.semanticweb.elk.owlapi.ElkReasonerFactory;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
-import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
-import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-import owl.transform.OWLOntologyTransformer;
+import main.StaticValues;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 import tracker.TimeTracker;
-import uk.ac.manchester.cs.owl.owlapi.OWLOntologyImpl;
 
 public class OntologyOperator implements IOWLOntologyExtension {
 

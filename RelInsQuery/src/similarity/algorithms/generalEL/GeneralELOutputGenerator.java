@@ -11,12 +11,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import main.Main;
-import main.StaticValues;
-
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 
+import main.StaticValues;
 import similarity.algorithms.specifications.BasicInputSpecification;
 import similarity.algorithms.specifications.GeneralParameters;
 import similarity.algorithms.specifications.OutputType;

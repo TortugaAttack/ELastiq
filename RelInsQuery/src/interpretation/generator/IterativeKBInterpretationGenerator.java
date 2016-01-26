@@ -5,12 +5,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import interpretation.ds.CanonicalDomain;
-import interpretation.ds.CanonicalInterpretation;
-import interpretation.ds.DomainNode;
-
-import main.StaticValues;
-
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
@@ -20,6 +14,10 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 
+import interpretation.ds.CanonicalDomain;
+import interpretation.ds.CanonicalInterpretation;
+import interpretation.ds.DomainNode;
+import main.StaticValues;
 import owl.OntologyOperator;
 import owl.transform.flatten.OWLAxiomFlatteningTransformer;
 import statistics.StatStore;

@@ -5,6 +5,8 @@ import org.semanticweb.owlapi.util.SimpleShortFormProvider;
 
 public class SimpleIntegerAcceptingShortFormProvider extends SimpleShortFormProvider{
 
+	private static final long serialVersionUID = 5748394804953470793L;
+
 	@Override
 	public String getShortForm(OWLEntity entity) {
 		String sf = super.getShortForm(entity);

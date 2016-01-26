@@ -6,13 +6,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+//import java.util.logging.Logger;
 
-import main.StaticValues;
+//import main.StaticValues;
 
 public class GeneralParameters {
 
-	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
+//	private static final Logger LOG = Logger.getLogger(StaticValues.LOGGER_NAME);
 	
 	public static final String SMALL_MODEL = "smallModel";
 	public static final String NORMALIZING = "normalizing";

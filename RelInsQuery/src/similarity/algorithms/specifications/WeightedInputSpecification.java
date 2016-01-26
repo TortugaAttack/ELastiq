@@ -1,22 +1,14 @@
 package similarity.algorithms.specifications;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
-import main.StaticValues;
-
 import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLEntity;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 
-import similarity.EntityWeightingFunction;
+import main.StaticValues;
 import similarity.measures.entities.DefaultEntitySimilarityMeasure;
-import similarity.measures.entities.IEntitySimilarityMeasure;
-import similarity.measures.entities.PrimitiveEntitySimilarityMeasure;
 import similarity.measures.entities.SymmetricPrimitiveEntitySimilarityMeasure;
 
 public class WeightedInputSpecification extends BasicInputSpecification {

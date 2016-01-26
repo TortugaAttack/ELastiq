@@ -5,12 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import main.Main;
-
 import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 
+import main.Main;
 import similarity.algorithms.specifications.BasicInputSpecification;
 
 
