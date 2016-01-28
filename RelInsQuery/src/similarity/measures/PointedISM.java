@@ -1,5 +1,11 @@
 package similarity.measures;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 import org.semanticweb.owlapi.model.OWLClass;
@@ -64,17 +70,57 @@ public class PointedISM implements ISimilarityMeasure<PointedInterpretation> {
 		StatStore.getInstance().enterValue("successor subset amount 2^n", qSucc.length * 1.0);
 		StatStore.getInstance().enterValue("instances fixed amount", qInstMust.length * 1.0);
 		long start = System.currentTimeMillis();
-		for(int sI = 0; sI < Math.pow(2, qSucc.length); sI++){
-			for(int iI = 0; iI < Math.pow(2, qInstMight.length); iI++){
-				double weight = fixWeight + getSubsetWeight(qInstMight, iI, qSucc, sI);
-				
-				maxsim = Math.max(maxsim,
-						(simCN(pInst, qInstMust, qInstMight, iI) + simSC(pSucc, qSucc, sI))/weight);
+		int workers = Runtime.getRuntime().availableProcessors();
+		
+		if(workers > Math.pow(2, qSucc.length)){
+//			workers = 1;
+//		}
+			// sequential variant
+			for(int sI = 0; sI < Math.pow(2, qSucc.length); sI++){
+				for(int iI = 0; iI < Math.pow(2, qInstMight.length); iI++){
+					double weight = fixWeight + getSubsetWeight(qInstMight, iI, qSucc, sI);
+					
+					maxsim = Math.max(maxsim,
+							(simCN(pInst, qInstMust, qInstMight, iI) + simSC(pSucc, qSucc, sI))/weight);
+				}
+			}
+		}else{
+			// parallel variant
+			double div = Math.pow(2, qSucc.length)/workers;
+			List<SubsetIterator> iterators = new LinkedList<SubsetIterator>();
+			for(int i=0; i<workers; i++){
+				iterators.add(new SubsetIterator(pInst, qInstMust, qInstMight, pSucc, qSucc, fixWeight,
+											m_input, i*Math.round(div), (i+1)*Math.round(div), m_algo.getCurrentIteration()));
+			}
+			
+			ExecutorService executor = Executors.newFixedThreadPool(workers);
+			List<Future<Double>> results = new LinkedList<Future<Double>>();
+			
+			try {
+				results = executor.invokeAll(iterators);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			executor.shutdown();
+			
+			for(Future<Double> result : results){
+				try {
+//					LOG.info("Process iterated over " + result.get().toString() + " elements");
+					maxsim = Math.max(maxsim, result.get());
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		
 		StatStore.getInstance().enterValue("subset times for 2^"+qSucc.length, System.currentTimeMillis() - start * 1.0);
-		
+		LOG.info("msim = " + maxsim);
 		return maxsim;
 	}
 	
