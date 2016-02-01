@@ -51,7 +51,7 @@ accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
 log:INFO
 # give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
-output:./out_crisp/
+output:./out01_crisp/
 
 # specify what outputs you require
 [output]

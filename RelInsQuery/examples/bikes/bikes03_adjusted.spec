@@ -22,12 +22,14 @@ Racebike and hasColor some Black and allowsUse some Offroad and allowsUse some S
 # weights of entities, key-value pairs, overriding base weights of all entities (DEFAULT: 1, can be specified in [parameters])
 # this block is optional
 [weights]
+# Color is my priority!
+hasColor:2
 # Black color, very important!
 Black:10
 # reduce importance for the fact of just being any color
 Color:0.1
 # Offroad more important than Street usage
-Offroad:5
+Offroad:8
 Street:0.3
 
 # describe the primitive similarity measure
@@ -60,7 +62,7 @@ accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
 log:INFO
 # give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
-output:./out_adjusted/
+output:./out03_adjusted/
 
 # specify what outputs you require
 [output]

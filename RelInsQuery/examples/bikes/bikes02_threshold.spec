@@ -7,7 +7,7 @@
 # relative path will be seen relative to the java runtime execution path
 # ontology block has to be specified before [query] [weights] and [measure] if PRIMITIVE is selected and explicit similarities are set
 [ontology]
-examples/bikes/bikes.owl
+bikes.owl
 
 # the query
 # currently only manchester owl class expression format supported
@@ -58,7 +58,7 @@ accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
 log:INFO
 # give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
-output:./out_threshold/
+output:./out02_threshold/
 
 # specify what outputs you require
 [output]

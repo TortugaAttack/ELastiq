@@ -142,7 +142,7 @@ public class SubsetIterator implements Callable<Double> {
 					if(roleSim > 0){
 						max = Math.max(max, 
 									   roleSim *
-									   ((1 - w) + (w *
+									   (w + ((1 - w) *
 									   SimilarityValueFactory.getFactory()
 									   .getSimilarityValue(
 											   pR.getToPointedInterpretation(),
