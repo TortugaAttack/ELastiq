@@ -8,13 +8,13 @@
 # ontology block has to be specified before [query] [weights] and [measure] if PRIMITIVE is selected and explicit similarities are set
 [ontology]
 #examples/MOWL/mowlcorp/Film.owl.xml
-examples/MOWL/mowlcorp/notations/nnotations01.owl.xml
+src/test/resources/example.owl
 
 # the query
 # currently only manchester owl class expression format supported
 [query]
 #Arachnid and Broadcast and Cricketer and Town and (linksToWebsite some (CanadianFootballTeam))
-GO_0000466 and GO_0005980 and PomBase_SPAC6G9.09c and (during some GO_0090375) and (transcriptionally_regulates some (GO_0006801 and PomBase_SPAC824.03c and (protease_inhibitor_of some (GO_0046474 and PomBase_SPBC18H10.19 and PomBase_SPBP23A10.13 and (transcriptionally_regulates some (GO_0006467 and PomBase_SPBP35G2.07))))))
+Student and advisor some (Faculty and teacherOf some Course) and takesCourse some Course
 
 # the successor discounting factor
 # gets his own block so it will not be forgotten
@@ -37,11 +37,9 @@ DEFAULT
 # A:C:0.5
 # r:s:0.8
 
-# either the similarity threshold for accepting relaxed instances (double)
-# or a topk specification so that the best k results are returned regardless of their similarity (top[int])
+# simply the threshold value for accepting relaxed instances
 [threshold]
 0.01
-#top10
 
 # a generic and optional list of key-value pairs altering the behaviour of the application
 [parameters]
@@ -56,19 +54,21 @@ baseWeight:1
 #iterations:500
 # OR give an error threshold, if all values change less than the given percentage, stop the iteration (DEFAULT: 0.001)
 precision:0.01
+# OR give the amount of answers you want, a very low precision termination is used and the answer set is cropped to the given amount
+#topk:3
 # specify the accuracy of decimal places throughout the entire computation (DEFAULT: 10) (be aware of weird behaviour for accuracy>15)
 accuracy:5
 # specify the log level: SEVERE, WARNING, INFO, FINE (DEFAULT: WARNING)
 log:INFO
 # give the path to an existing directory for output storage, if invalid or non-existing, default is used (DEFAULT: ./)
-output:./out_example/
+output:./out_LUBM/
 
 # specify what outputs you require
 [output]
 # ASCII readable table of interesting similarity values and their development
-ASCII
+#ASCII
 # CSV table of interesting similarity values and their development
-CSV
+#CSV
 # a list of the actual individuals that are relaxed instances of the query including their similarity
 INSTANCES
 # a simple table of computational statistics with min, max and mean values

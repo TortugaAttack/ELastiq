@@ -2,6 +2,7 @@ package org.tu_dresden.elastiq.owl.io;
 
 import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser;
 import org.semanticweb.owlapi.expression.OWLEntityChecker;
+import org.semanticweb.owlapi.expression.ParserException;
 import org.semanticweb.owlapi.expression.ShortFormEntityChecker;
 import org.semanticweb.owlapi.io.OWLParserException;
 import org.semanticweb.owlapi.model.OWLClassExpression;
@@ -29,7 +30,11 @@ public class SimpleManchesterOWLQueryParser extends OWLQueryParser {
 	@Override
 	public OWLClassExpression parse(String classExpression)
 			throws OWLParserException {
-		return m_parser.parse(classExpression);
+		try {
+			return m_parser.parse(classExpression);
+		} catch (ParserException e) {
+			throw new OWLParserException(e);
+		}
 	}
 	
 	
