@@ -1,3 +1,0 @@
-<e>	similarity: 0.9185
-<f>	similarity: 0.78729
-<d>	similarity: 0.34667
